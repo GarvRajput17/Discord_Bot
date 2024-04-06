@@ -3,9 +3,10 @@ import asyncio
 
 class PokemonPowerOfUs:
 
-  def __init__(self, message):
+  def __init__(self, message,bot):
     self.character = None
     self.message = message
+    self.bot = bot
 
   async def power_of_us_intro(self):
     await self.message.channel.send("Welcome to Pokémon: The Power of Us game!"
@@ -40,37 +41,38 @@ class PokemonPowerOfUs:
       exit()
 
   async def choose_character(self):
-    await self.message.channel.send("Choose your character:")
-    await self.message.channel.send("1. Ash Ketchum")
-    await self.message.channel.send("2. Risa")
-    await self.message.channel.send("3. Toren")
-    await self.message.channel.send("4. Callahan")
-    await self.message.channel.send("5. Harriet")
-    await self.message.channel.send("6. Margo")
+        await self.message.channel.send("Choose your character:")
+        await self.message.channel.send("1. Ash Ketchum")
+        await self.message.channel.send("2. Risa")
+        await self.message.channel.send("3. Toren")
+        await self.message.channel.send("4. Callahan")
+        await self.message.channel.send("5. Harriet")
+        await self.message.channel.send("6. Margo")
 
-    def check(m):
-        return m.author == self.message.author and m.channel == self.message.channel
+        def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content.isdigit()
 
-    try:
-        choice_message = await self.message.channel.wait_for('message', timeout=60, check=check)
-        choice = choice_message.content.strip()
-    except asyncio.TimeoutError:
-        await self.message.channel.send("\nTime's up! Game terminated.")
-        return
+        try:
+            response = await self.bot.wait_for('message', check=check, timeout=30.0)
+            choice = int(response.content)
+            self.user_input = choice
+            if choice == 1:
+                self.character = "Ash Ketchum"
+                await self.ash_intro()
+            elif choice == 2:
+                self.character = "Risa"
+                await self.risa_intro()
+            elif choice == 3:
+                self.character = "Toren"
+                await self.toren_intro()
+            # Add additional conditions for other characters here
+            else:
+                await self.message.channel.send(
+                  "Invalid choice. Please select a number between 1 and 6.")
+                await self.choose_character()
+        except asyncio.TimeoutError:
+            await self.message.channel.send("\nTime's up! Please try again.")
 
-    if choice == '1':
-        self.character = "Ash Ketchum"
-        await self.ash_intro()
-    elif choice == '2':
-        self.character = "Risa"
-        await self.risa_intro()
-    elif choice == '3':
-        self.character = "Toren"
-        await self.toren_intro()
-    
-    else:
-        await self.message.channel.send("Invalid choice. Please select a number between 1 and 3.")
-        await self.choose_character()
 
   async def ash_intro(self):
     await self.message.channel.send("\nYou've chosen to play as Ash Ketchum.")
@@ -96,11 +98,24 @@ class PokemonPowerOfUs:
     await self.message.channel.send("1. Approach the Pokémon cautiously.")
     await self.message.channel.send(
         "2. Call out to the Pokémon and try to calm it down.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.approach_pokemon()
-    elif choice == '2':
-      await self.call_out_to_pokemon()
+    def check(m):
+        
+        return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+        # Wait for a message from the user that satisfies the check function
+        response = await self.bot.wait_for('message', check=check, timeout=20.0)
+        choice = response.content
+
+        # Process the user's choice
+        if choice == '1':
+            await self.approach_pokemon()
+        elif choice == '2':
+            await self.call_out_to_pokemon()
+
+    except asyncio.TimeoutError:
+        # Handle timeout if no response is received within the specified timeout duration
+        await self.message.channel.send("Time's up! Please try again.")
 
   async def approach_pokemon(self):
     await self.message.channel.send(
@@ -122,11 +137,28 @@ class PokemonPowerOfUs:
     await asyncio.sleep(1)
     await self.message.channel.send("1. Investigate the glimmering object.")
     await self.message.channel.send("2. Focus on comforting the Pokémon.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_glimmering_object()
-    elif choice == '2':
-      await self.focus_on_comforting_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_glimmering_object()
+            elif choice == '2':
+                await self.focus_on_comforting_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def call_out_to_pokemon(self):
     await self.message.channel.send(
@@ -143,11 +175,28 @@ class PokemonPowerOfUs:
     await asyncio.sleep(1)
     await self.message.channel.send("1. Investigate the glimmering object.")
     await self.message.channel.send("2. Keep focusing on calming the Pokémon.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_glimmering_object()
-    elif choice == '2':
-      await self.keep_focusing_on_calming_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_glimmering_object()
+            elif choice == '2':
+                await self.keep_focusing_on_calming_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def investigate_glimmering_object(self):
     await self.message.channel.send(
@@ -164,11 +213,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send("1. Proceed cautiously towards the voice.")
     await self.message.channel.send(
         "2. Stay where you are and observe the surroundings.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.proceed_towards_voice()
-    elif choice == '2':
-      await self.stay_and_observe()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.proceed_towards_voice()
+            elif choice == '2':
+                await self.stay_and_observe()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def focus_on_comforting_pokemon(self):
     await self.message.channel.send(
@@ -184,11 +250,28 @@ class PokemonPowerOfUs:
     await asyncio.sleep(1)
     await self.message.channel.send("1. Investigate the glimmering object.")
     await self.message.channel.send("2. Keep comforting the Pokémon.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_glimmering_object()
-    elif choice == '2':
-      await self.keep_focusing_on_comforting_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_glimmering_object()
+            elif choice == '2':
+                await self.keep_focusing_on_comforting_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def keep_focusing_on_calming_pokemon(self):
     await self.message.channel.send(
@@ -204,11 +287,28 @@ class PokemonPowerOfUs:
     await asyncio.sleep(1)
     await self.message.channel.send("1. Investigate the glimmering object.")
     await self.message.channel.send("2. Keep your attention on the Pokémon.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_glimmering_object()
-    elif choice == '2':
-      await self.keep_focusing_on_calming_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_glimmering_object()
+            elif choice == '2':
+                await self.keep_focusing_on_calming_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def proceed_towards_voice(self):
     await self.message.channel.send(
@@ -229,11 +329,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send(
         "2. Try to distract the wild Pokémon to give the trapped Pokémon a chance to escape."
     )
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.engage_in_battle()
-    elif choice == '2':
-      await self.distract_wild_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.engage_in_battle()
+            elif choice == '2':
+                await self.distract_wild_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def stay_and_observe(self):
     await self.message.channel.send(
@@ -253,11 +370,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send(
         "2. Try to come up with a plan to distract the wild Pokémon and aid the trapped Pokémon."
     )
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.engage_in_battle()
-    elif choice == '2':
-      await self.distract_wild_pokemon()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.engage_in_battle()
+            elif choice == '2':
+                await self.distract_wild_pokemon()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def engage_in_battle(self):
     await self.message.channel.send(
@@ -325,11 +459,28 @@ class PokemonPowerOfUs:
         "1. Yes, I'm ready for some exciting battles!")
     await self.message.channel.send(
         "2. Maybe later, I want to explore more of Fula City first.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.participate_in_tournament()
-    elif choice == '2':
-      await self.explore_more_of_fula_city()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.participate_in_tournament()
+            elif choice == '2':
+                await self.explore_more_of_fula_city()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def participate_in_tournament(self):
     await self.message.channel.send(
@@ -357,7 +508,7 @@ class PokemonPowerOfUs:
         "With the tournament over, you continue your exploration of Fula City, eager for more adventures."
     )
     await asyncio.sleep(2)
-    # Continue with the rest of the storyline
+    await explore_more_of_fula_city()
 
   async def explore_more_of_fula_city(self):
     await self.message.channel.send(
@@ -380,11 +531,28 @@ class PokemonPowerOfUs:
                                     )
     await self.message.channel.send(
         "2. Maybe later, I'll continue exploring the city for now.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_abandoned_building()
-    elif choice == '2':
-      await self.continue_exploring_city()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_abandoned_building()
+            elif choice == '2':
+                await self.continue_exploring_city()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def investigate_abandoned_building(self):
     await self.message.channel.send(
@@ -406,11 +574,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send("1. Investigate the source of the noise.")
     await self.message.channel.send(
         "2. Leave the building and come back later with backup.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_source_of_noise()
-    elif choice == '2':
-      await self.leave_building_and_come_back()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_source_of_noise()
+            elif choice == '2':
+                await self.leave_building_and_come_back()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def continue_exploring_city(self):
     await self.message.channel.send(
@@ -432,11 +617,28 @@ class PokemonPowerOfUs:
         "1. Yes, I'm curious to see what they have.")
     await self.message.channel.send(
         "2. Maybe later, I'll keep exploring for now.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.browse_marketplace()
-    elif choice == '2':
-      await self.keep_exploring_without_marketplace()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.browse_marketplace()
+            elif choice == '2':
+                await self.keep_exploring_without_marketplace()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def browse_marketplace(self):
     await self.message.channel.send("\nYou decide to browse the marketplace.")
@@ -458,11 +660,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send(
         "1. Yes, it could be valuable or hold some secrets.")
     await self.message.channel.send("2. No, it seems too risky.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.purchase_artifact()
-    elif choice == '2':
-      await self.decide_not_to_purchase_artifact()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.purchase_artifact()
+            elif choice == '2':
+                await self.decide_not_to_purchase_artifact()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def purchase_artifact(self):
     await self.message.channel.send(
@@ -524,11 +743,28 @@ class PokemonPowerOfUs:
     await self.message.channel.send(
         "2. Express concern about the experiments and suggest safer alternatives."
     )
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.offer_to_help_with_research()
-    elif choice == '2':
-      await self.express_concern_and_suggest_alternatives()
+
+    def check(m):
+            # Check if the message author is the same as the user who triggered the command
+            # Check if the message is sent in the same channel as the prompt message
+            # Check if the message content is either '1' or '2'
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for a message from the user that satisfies the check function
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.offer_to_help_with_research()
+            elif choice == '2':
+                await self.express_concern_and_suggest_alternatives()
+
+    except asyncio.TimeoutError:
+          # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def leave_building_and_come_back(self):
     """
@@ -576,11 +812,32 @@ class PokemonPowerOfUs:
         "1. Yes, I'm ready for some exciting battles!")
     await self.message.channel.send(
         "2. Maybe later, I want to explore more of Fula City first.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.participate_in_tournament()
-    elif choice == '2':
-      await self.explore_more_of_fula_city()
+
+        # Define a check function to validate the user's respons
+
+    def check(m):
+          # Check if the message author is the same as the user who triggered the command
+          # Check if the message is sent in the same channel as the prompt message
+          # Check if the message content is either '1' or '2'
+          return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+          # Wait for a message from the user that satisfies the check function
+          response = await self.bot.wait_for('message', check=check, timeout=20.0)
+          choice = response.content
+
+          # Process the user's choice
+          if choice == '1':
+              await self.participate_in_tournament()
+          elif choice == '2':
+              await self.explore_more_of_fula_city()
+
+    except asyncio.TimeoutError:
+          # Handle timeout if no response is received within the specified timeout duration
+          await self.message.channel.send("Time's up! Please try again.")
+
+
+
 
   async def participate_in_tournament(self):
     """
@@ -611,7 +868,7 @@ class PokemonPowerOfUs:
         "With the tournament over, you continue your exploration of Fula City, eager for more adventures."
     )
     await asyncio.sleep(2)
-    # Continue with the rest of the storyline
+    await self.explore_more_of_fula_city()
 
   async def explore_more_of_fula_city(self):
     """
@@ -637,11 +894,26 @@ class PokemonPowerOfUs:
                                     )
     await self.message.channel.send(
         "2. Maybe later, I'll continue exploring the city for now.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_abandoned_building()
-    elif choice == '2':
-      await self.continue_exploring_city()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if response == '1':
+                await self.investigate_abandoned_building()
+            elif response == '2':
+                await self.continue_exploring_city()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def investigate_abandoned_building(self):
     """
@@ -668,13 +940,28 @@ class PokemonPowerOfUs:
         "2. Leave the building and come back later with backup.")
     await self.message.channel.send(
         "3. Ignore the noise and continue exploring.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_source_of_noise()
-    elif choice == '2':
-      await self.leave_building_and_come_back_with_backup()
-    elif choice == '3':
-      await self.ignore_noise_and_continue_exploring()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2', '3']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_source_of_noise()
+            elif choice == '2':
+                await self.leave_building_and_come_back_with_backup()
+            elif choice == '3':
+                await self.ignore_noise_and_continue_exploring()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def investigate_source_of_noise(self):
     """
@@ -705,13 +992,28 @@ class PokemonPowerOfUs:
     )
     await self.message.channel.send(
         "3. Leave the laboratory and inform the authorities.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.offer_to_help_with_research()
-    elif choice == '2':
-      await self.express_concern_and_suggest_alternatives()
-    elif choice == '3':
-      await self.leave_lab_and_inform_authorities()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2', '3']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.offer_to_help_with_research()
+            elif choice == '2':
+                await self.express_concern_and_suggest_alternatives()
+            elif choice == '3':
+                await self.leave_lab_and_inform_authorities()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def offer_to_help_with_research(self):
     """
@@ -845,11 +1147,26 @@ class PokemonPowerOfUs:
         "1. Yes, I'm ready for some exciting battles!")
     await self.message.channel.send(
         "2. Maybe later, I want to explore more of Fula City first.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.participate_in_tournament()
-    elif choice == '2':
-      await self.explore_more_of_fula_city()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.participate_in_tournament()
+            elif choice == '2':
+                await self.explore_more_of_fula_city()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def participate_in_tournament(self):
     """
@@ -906,11 +1223,26 @@ class PokemonPowerOfUs:
                                     )
     await self.message.channel.send(
         "2. Maybe later, I'll continue exploring the city for now.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.investigate_abandoned_building()
-    elif choice == '2':
-      await self.continue_exploring_city()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.investigate_abandoned_building()
+            elif choice == '2':
+                await self.continue_exploring_city()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def continue_exploring_city(self):
     """
@@ -918,7 +1250,7 @@ class PokemonPowerOfUs:
         """
     await self.message.channel.send(
         "\nYou decide to continue exploring Fula City.")
-    # Continue the exploration storyline
+    await self.final_encounter()
 
   async def final_encounter(self):
     """
@@ -942,11 +1274,26 @@ class PokemonPowerOfUs:
     await self.message.channel.send(
         "1. Yes, I'll face the Legendary Pokémon and protect Fula City!")
     await self.message.channel.send("2. No, I'll leave it to the authorities.")
-    choice = await self.input_with_timeout("Enter your choice: ", 20)
-    if choice == '1':
-      await self.confront_legendary_pokemon()
-    elif choice == '2':
-      await self.leave_it_to_authorities()
+
+        # Define a check function to validate the user's response
+    def check(m):
+            return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
+
+    try:
+            # Wait for the user's response with a timeout of 20 seconds
+            response = await self.bot.wait_for('message', check=check, timeout=20.0)
+            choice = response.content
+
+            # Process the user's choice
+            if choice == '1':
+                await self.confront_legendary_pokemon()
+            elif choice == '2':
+                await self.leave_it_to_authorities()
+
+    except asyncio.TimeoutError:
+            # Handle timeout if no response is received within the specified timeout duration
+            await self.message.channel.send("Time's up! Please try again.")
+
 
   async def confront_legendary_pokemon(self):
     """
@@ -1003,5 +1350,3 @@ class PokemonPowerOfUs:
     )
     await asyncio.sleep(2)
     await self.message.channel.send("\n--- The End ---")
-
-
