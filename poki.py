@@ -5,18 +5,19 @@ import time
 import asyncio
 import random
 import json
+from new import join, start_game
 from guess import start_quiz, guess_pokemon
 from pus import PokemonPowerOfUs
-from dotenv import load_dotenv
-from log import setup_logger
-from damage import load_learnsets, load_moves, load_pokedex
-from custom_view import CustomView
-from pokemon import Pokemon
+#from dotenv import load_dotenv
+#from logs import setup_logger
+#from damage import load_learnsets, load_moves, load_pokedex
+#from custom_view import CustomView
+#from pokemon import Pokemon
 
+#load_dotenv()
+#logger = setup_logger(__name__)
 
-load_dotenv()
-logger = setup_logger(__name__)
-
+API_URL = "https://pokemontrivia-1-c0774976.deta.app/trivia?endpoint=images"
 
 POKEMON_PRICES = {
     "bulbasaur": 100,
@@ -208,12 +209,6 @@ async def gamest(message):
   await game.power_of_us_intro()
 
 
-
-
-
-API_URL = "https://pokemontrivia-1-c0774976.deta.app/trivia?endpoint=images"
-
-
 def get_trivia_question():
   response = requests.get(API_URL)
   data = response.json()
@@ -270,6 +265,207 @@ async def on_message(message):
 
   await play_trivia_game(message)
 
+
+'''
+POKEAPI_URL = "https://pokeapi.co/api/v2"
+TCGDEX_URL = "https://api.tcgdex.net/v2/en"
+
+
+ABILITIES = ["attack", "defense", "special-attack", "special-defense"]
+
+
+async def load_pokemons(battle):
+  for _ in range(3):
+    pokemon_id = random.randint(1, 800)
+    pokemon_data = requests.get(f"{POKEAPI_URL}/pokemon/{pokemon_id}").json()
+    battle["pokemons1"].append(pokemon_data)
+
+  for _ in range(3):
+    pokemon_id = random.randint(1, 800)
+    pokemon_data = requests.get(f"{POKEAPI_URL}/pokemon/{pokemon_id}").json()
+    battle["pokemons2"].append(pokemon_data)
+
+
+async def load_card_image(pokemon_name):
+  try:
+    response = requests.get(
+        f"{TCGDEX_URL}/cards?q=name:{pokemon_name.lower()}")
+    card_data = response.json()
+    card_image_url = card_data[0]["image"]
+    return card_image_url + "/high.webp"
+  except Exception as e:
+    print(f"Error fetching card image for {pokemon_name}: {e}")
+    return None
+
+
+async def start_battle(battle):
+  while battle["round"] < 3:
+    await battle_round(battle)
+    battle["round"] += 1
+
+
+async def battle_round(battle):
+  player1 = battle["player1"]
+  player2 = battle["player2"]
+  round_number = battle["round"]
+
+  pokemon1 = battle["pokemons1"][round_number]
+  pokemon2 = battle["pokemons2"][round_number]
+
+  card_image1 = await load_card_image(pokemon1["name"])
+  card_image2 = await load_card_image(pokemon2["name"])
+
+  await player1.send(
+      f"Stats: Attack: {pokemon1['stats']['attack']}, Defense: {pokemon1['stats']['defense']}, Special Attack: {pokemon1['stats']['special-attack']}, Special Defense: {pokemon1['stats']['special-defense']}"
+  )
+  await player1.send(
+      f"Round {round_number + 1}: Your Pokemon: {pokemon1['name']}")
+  await player1.send(card_image1)
+
+  await player2.send(
+      f"Stats: Attack: {pokemon2['stats']['attack']}, Defense: {pokemon2['stats']['defense']}, Special Attack: {pokemon2['stats']['special-attack']}, Special Defense: {pokemon2['stats']['special-defense']}"
+  )
+  await player2.send(
+      f"Round {round_number + 1}: Your Pokemon: {pokemon2['name']}")
+  await player2.send(card_image2)
+
+  ability1 = random.sample(ABILITIES, 2)
+  sum1 = sum(pokemon1["stats"][ability] for ability in ability1)
+
+  ability2 = random.sample(ABILITIES, 2)
+  sum2 = sum(pokemon2["stats"][ability] for ability in ability2)
+
+  if sum1 > sum2:
+    winner = player1
+    await message.channel.send(
+        f"Congratulations {winner}, You have won the Battle!")
+    await message.channel.send(
+        f"Congratulations {winner}, You have been rewarded 200 coins")
+    #update_currency(player1, 200)
+
+  elif sum1 < sum2:
+    winner = player2
+    await message.channel.send(
+        f"Congratulations {winner}, You have won the Battle!")
+    await message.channel.send(
+        f"Congratulations {winner}, You have been rewarded 200 coins")
+
+
+#async def update_currency(player, coins):
+
+
+POKEAPI_URL = "https://pokeapi.co/api/v2"
+TCGDEX_URL = "https://api.tcgdex.net/v2/en"
+
+ABILITIES = ["attack", "defense", "special-attack", "special-defense"]
+
+
+class Player:
+
+  def __init__(self, user):
+    self.user = user
+    self.pokemons = []
+
+
+class Game:
+
+  def __init__(self):
+    self.players = {}
+    self.round = 0
+
+  def add_player(self, player):
+    self.players[player.user.id] = player
+
+  def get_player(self, user):
+    return self.players.get(user.id)
+
+  async def load_pokemons(self, player):
+    for _ in range(3):
+      pokemon_id = random.randint(1, 800)
+      pokemon_data = requests.get(f"{POKEAPI_URL}/pokemon/{pokemon_id}").json()
+      player.pokemons.append(pokemon_data)
+
+  async def load_card_image(self, pokemon_name):
+    try:
+      response = requests.get(
+          f"{TCGDEX_URL}/cards?q=name:{pokemon_name.lower()}")
+      card_data = response.json()
+      card_image_url = card_data[0]["image"]
+      return card_image_url + "/high.webp"
+    except Exception as e:
+      print(f"Error fetching card image for {pokemon_name}: {e}")
+      return None
+
+  async def start_battle(self, ctx):
+    for player_id, player in self.players.items():
+      await self.load_pokemons(player)
+
+    await ctx.send("Starting the battle...")
+    for _ in range(3):
+      await self.battle_round(ctx)
+
+  async def battle_round(self, ctx):
+    self.round += 1
+    await ctx.send(f"Round {self.round} starts now!")
+
+    for player_id, player in self.players.items():
+      pokemon = player.pokemons[self.round - 1]
+      card_image = await self.load_card_image(pokemon["name"])
+      await ctx.send(f"{player.user.name}'s Pokemon: {pokemon['name']}")
+      await ctx.send(card_image)
+
+    await ctx.send("Calculating results...")
+
+    # Randomly select abilities for both players
+    ability1 = random.sample(ABILITIES, 2)
+    ability2 = random.sample(ABILITIES, 2)
+
+    # Calculate total stats for player 1
+    sum1 = sum(pokemon["stats"][ability] for ability in ability1
+               for pokemon in self.players[1].pokemons)
+
+    # Calculate total stats for player 2
+    sum2 = sum(pokemon["stats"][ability] for ability in ability2
+               for pokemon in self.players[2].pokemons)
+
+    # Determine the winner of the round
+    if sum1 > sum2:
+      winner = self.players[1].user.name
+      await ctx.send(
+          f"Congratulations {winner}, You have won the Round {self.round}!")
+    elif sum1 < sum2:
+      winner = self.players[2].user.name
+      await ctx.send(
+          f"Congratulations {winner}, You have won the Round {self.round}!")
+    else:
+      await ctx.send("Round ended in a tie!")
+
+
+game = Game()
+
+
+@client.event()
+async def join(ctx):
+  player = Player(ctx.author)
+  game.add_player(player)
+  await ctx.send(f"{ctx.author.name} has joined the game.")
+
+
+@client.event()
+async def start_game(ctx):
+  if len(game.players) < 2:
+    await ctx.send("Need at least 2 players to start the game.")
+    return
+  await game.start_battle(ctx)
+
+
+@client.event()
+async def Battle(ctx):
+  if len(game.players) < 2:
+    await ctx.send("Need at least 2 players to start the battle.")
+    return
+  await game.start_battle(ctx)
+'''
 
 @client.event
 async def on_ready():
@@ -372,9 +568,39 @@ async def on_message(message):
   if message.content.startswith("$Trivia"):
     await play_trivia_game(message)
 
+  if message.content.startswith("$join"):
+    await join(message)
+  if message.content.startswith("$start_game"):
+    await start_game(message)
+                                
+
+
+'''
+  if message.content.startswith("$Battle"):
+
+    battle = {
+        "player1": message.author,
+        "player2": None,
+        "round": 0,
+        "pokemons1": [],
+        "pokemons2": [],
+        "timeout": 60
+    }
+    await message.channel.send(
+        f"{message.author.mention} has started a battle! Waiting for another player to join..."
+    )
+
+    if message.content.startswith("$join"):      
+      await message.channel.send("You are not in a battle.")
+      battle["player2"] = message.author.id
+      await message.channel.send(
+          f"{message.author.mention} has joined the battle!")
+      await load_pokemons(battle["player1"])
+      await start_battle(battle["player2"])
+'''
 
 try:
-  token = os.getenv("TOKEN") or ""
+  token = os.getenv("BOT_TOKEN") or ""
   if token == "":
     raise Exception("Please add your token to the Secrets pane.")
   client.run(token)
