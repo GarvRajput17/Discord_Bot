@@ -1,3 +1,4 @@
+import discord
 import requests
 import random
 
@@ -42,71 +43,77 @@ class Game:
             return None
 
     async def start_battle(self, channel):
-        for player_id, player in self.players.items():
-            player.pokemon = await self.load_pokemon()
-            if player.pokemon:
-                player.stats = [stat['base_stat'] for stat in player.pokemon['stats']]
-                player.types = [type_entry['type']['name'] for type_entry in player.pokemon['types']]
-                await channel.send(
-                    f"```\n{player.user.name}'s Pokemon: {player.pokemon['name']}\n```"
-                )
-                await channel.send(f"```\nTypes: {', '.join(player.types)}\n```")
-                await channel.send(
-                    f"```\nStats: {', '.join(str(stat) for stat in player.stats)}\n```"
-                )
-            else:
-                await channel.send(
-                    f"```\nFailed to load a Pokémon for {player.user.name}\n```"
-                )
+      for player_id, player in self.players.items():
+          player.pokemon = await self.load_pokemon()
+          if player.pokemon:
+              player.stats = [stat['base_stat'] for stat in player.pokemon['stats']]
+              player.types = [type_entry['type']['name'] for type_entry in player.pokemon['types']]
 
-        await channel.send("```\n🔥🌟🔥 Calculating results... 🔥🌟🔥\n```")
+      # Create embedded messages for displaying Pokémon details of both players side by side
+      for player_id, player in self.players.items():
+          embed_player = discord.Embed(
+              title=f"{player.user.name}'s Pokemon",
+              color=discord.Color.blue()
+          )
+          embed_player.set_thumbnail(url=player.pokemon['sprites']['front_default'])
+          embed_player.add_field(name="Name", value=player.pokemon['name'].capitalize(), inline=False)
+          embed_player.add_field(name="Types", value=", ".join(player.types).capitalize(), inline=False)
+          for stat_name, stat_value in zip(ABILITIES, player.stats):
+              embed_player.add_field(name=stat_name.capitalize(), value=stat_value, inline=True)
 
-        pts = {player_id: 0 for player_id in self.players.keys()}
+          await channel.send(embed=embed_player)
 
-        # Display each player's Pokémon's stats before proceeding to each round
-        for stat_index, stat_name in enumerate(ABILITIES):
-            for player_id, player in self.players.items():
-                await channel.send(f"```\n{player.user.name}'s Pokemon {stat_name}: {player.stats[stat_index]}\n```")
+      await channel.send("```\n🔥🌟🔥 Calculating results... 🔥🌟🔥\n```")
 
-        # Remaining battle logic...
-        for i, stat_name in enumerate(ABILITIES):
-            stat_values = [player.stats[i] for player in self.players.values()]
-            max_stat = max(stat_values)
-            winning_players = [
-                player_id
-                for player_id, stat_value in zip(self.players.keys(), stat_values)
-                if stat_value == max_stat
-            ]
+      pts = {player_id: 0 for player_id in self.players.keys()}
+      results_msg = ""
 
-            if len(winning_players) == 1:
-                pts[winning_players[0]] += 1
-                await channel.send(
-                    f"```\n🎉 {self.players[winning_players[0]].user.name} won the {stat_name} round! 🎉\n```"
-                )
-            else:
-                await channel.send(
-                    f"```\n🤝 Round ended in a tie for {stat_name}! 🤝\n```"
-                )
+      for i, stat_name in enumerate(ABILITIES):
+          stat_values = [player.stats[i] for player in self.players.values()]
+          max_stat = max(stat_values)
+          winning_players = [
+              player_id
+              for player_id, stat_value in zip(self.players.keys(), stat_values)
+              if stat_value == max_stat
+          ]
 
-        # Display round results
-        if list(pts.values())[0] > list(pts.values())[1]:
-            winner = self.players[list(pts.keys())[0]].user.name
-            await channel.send(
-                f"```\n🏆 Congratulations {winner}, You have won the Round! 🏆\n```"
-            )
-        elif list(pts.values())[0] < list(pts.values())[1]:
-            winner = self.players[list(pts.keys())[1]].user.name
-            await channel.send(
-                f"```\n🏆 Congratulations {winner}, You have won the Round! 🏆\n```"
-            )
-        else:
-            await channel.send("```\n🤝 Round ended in a tie! 🤝\n```")
+          if len(winning_players) == 1:
+              pts[winning_players[0]] += 1
+              results_msg += f"🎉 **{self.players[winning_players[0]].user.name}** won the {stat_name} round!\n"
+          else:
+              results_msg += f"🤝 Round ended in a tie for {stat_name}!\n"
+
+      # Create an embedded message for displaying the battle results
+      embed_results = discord.Embed(
+          title="Battle Results",
+          color=discord.Color.gold(),
+          description=results_msg
+      )
+      for player_id, player in self.players.items():
+          embed_results.add_field(
+              name=f"{player.user.name}",
+              value=f"Total Points: {pts[player_id]}",
+              inline=True
+          )
+
+      await channel.send(embed=embed_results)
+      if list(pts.values())[0] > list(pts.values())[1]:
+        winner = self.players[list(pts.keys())[0]].user.name
+        await channel.send(
+            f"```\n🏆 Congratulations {winner}, You have won the Round! 🏆\n```"
+        )
+      elif list(pts.values())[0] < list(pts.values())[1]:
+        winner = self.players[list(pts.keys())[1]].user.name
+        await channel.send(
+            f"```\n🏆 Congratulations {winner}, You have won the Round! 🏆\n```"
+        )
+      else:
+        await channel.send("```\n🤝 Round ended in a tie! 🤝\n```")
 
 game = Game()
 
 
 async def join(message):
-
     player = Player(message.author)
     game.add_player(player)
     await message.channel.send(f"{message.author.name} has joined the game.")
