@@ -456,7 +456,6 @@ async def on_message(message):
       greeting_message += "\n\nWelcome to our Pokémon Discord server! 🌟"
       greeting_message += "\n\nI'm here to assist you with all your Pokémon needs. If you have any questions or need help, just let me know!"
       greeting_message += "\n\nHere are some things I can do for you:"
-      greeting_message += "\n- Use `$list` to see a list of available Pokémon."
       greeting_message += "\n- Use `$pokemon <name>` to get detailed information about a specific Pokémon."
       greeting_message += "\n- Use `$marketplace` to explore the Pokémon Marketplace."
       greeting_message += "\n- Use `$startquiz` to start a Pokémon quiz."
@@ -504,7 +503,7 @@ async def on_message(message):
       embed.add_field(name="$start_game", value="Start a Pokémon battle game.", inline=False)
       embed.add_field(name="$draw", value="Draw a random Pokémon card.", inline=False)
       embed.add_field(name="$show_deck", value="Show your Pokémon card deck.", inline=False)
-      embed.add_field(name="$start_trade <@mention> <card_name>", value="Trade a Pokémon card with another user.", inline=False)
+      embed.add_field(name="$trade <@mention> <card_name>", value="Trade a Pokémon card with another user.", inline=False)
 
       # Send the embed
       await message.channel.send(embed=embed)
