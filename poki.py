@@ -252,7 +252,7 @@ async def register_user(ctx):
       "id": user_id,
       "username": username,
       "profile_id":
-      random.randint(1, 10),  # Generate a random profile ID between 1 and 10
+      random.randint(1, 50),  # Generate a random profile ID between 1 and 10
       "inventory": [],
       "currency": 500,
       "collectibles": {
