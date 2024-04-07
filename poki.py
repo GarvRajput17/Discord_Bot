@@ -6,8 +6,8 @@ import asyncio
 import random
 import json
 from guess import start_quiz, guess_pokemon
-from pus import PokemonPowerOfUs
-from battle import join, start_game
+#from pus import PokemonPowerOfUs
+#from battle import join, start_game
 from discord.ext import commands
 from discord.ui import Button, View
 from discord import ButtonStyle
@@ -753,6 +753,4 @@ except discord.HTTPException as e:
     print(
         "The Discord servers denied the connection for making too many requests"
     )
-    print(
-        "Get help from https://stackoverflow.com/questions/66724687/in-discord-py-how-to-solve-the-error-for-toomanyrequests"
-    )
+   
