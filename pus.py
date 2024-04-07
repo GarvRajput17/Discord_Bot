@@ -74,7 +74,7 @@ class PokemonPowerOfUs:
       )
 
     try:
-      response = await self.bot.wait_for('message', check=check, timeout=30.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = int(response.content)
       self.user_input = choice
       if choice == 1:
@@ -133,7 +133,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -188,7 +188,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -240,7 +240,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -293,7 +293,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -347,7 +347,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -401,7 +401,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -452,7 +452,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -502,7 +502,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -610,7 +610,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -687,7 +687,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -737,7 +737,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -789,7 +789,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -839,7 +839,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -943,7 +943,7 @@ class PokemonPowerOfUs:
 
     try:
       # Wait for a message from the user that satisfies the check function
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1030,7 +1030,7 @@ class PokemonPowerOfUs:
 
   #   try:
   #         # Wait for a message from the user that satisfies the check function
-  #         response = await self.bot.wait_for('message', check=check, timeout=20.0)
+  #         response = await self.bot.wait_for('message', check=check, timeout=60.0)
   #         choice = response.content
 
   #         # Process the user's choice
@@ -1118,8 +1118,8 @@ class PokemonPowerOfUs:
   #           return m.author == self.message.author and m.channel == self.message.channel and m.content in ['1', '2']
 
   #   try:
-  #           # Wait for the user's response with a timeout of 20 seconds
-  #           response = await self.bot.wait_for('message', check=check, timeout=20.0)
+  #           # Wait for the user's response with a timeout of 60 seconds
+  #           response = await self.bot.wait_for('message', check=check, timeout=60.0)
   #           choice = response.content
 
   #           # Process the user's choice
@@ -1172,8 +1172,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1229,8 +1229,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1392,8 +1392,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1482,8 +1482,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1532,8 +1532,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
@@ -1622,8 +1622,8 @@ class PokemonPowerOfUs:
       ]
 
     try:
-      # Wait for the user's response with a timeout of 20 seconds
-      response = await self.bot.wait_for('message', check=check, timeout=20.0)
+      # Wait for the user's response with a timeout of 60 seconds
+      response = await self.bot.wait_for('message', check=check, timeout=60.0)
       choice = response.content
 
       # Process the user's choice
