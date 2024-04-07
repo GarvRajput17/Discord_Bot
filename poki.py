@@ -354,7 +354,7 @@ async def play_trivia_game(message):
 
       if user_response.content.lower() == "$exit":
           await message.channel.send("Thanks for playing! Goodbye.")
-          await client.close()
+          
           return
       else:
           await play_trivia_game(message)
