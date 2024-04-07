@@ -40,7 +40,7 @@ APIs used:
 
 
 #How to run the code:
-Invite link of the Bot to your server: https://discord.com/oauth2/authorize?client_id=1224714002894946455
+Invite link of the Bot to your server: https://discord.com/oauth2/authorize?client_id=1224714002894946455&permissions=26933144321623&scope=bot
 You can start with $hello command to get all the commands
 if you need to see all the commands you can type $help
 For any more queries, you can contact @GarvRajput17 {github}
