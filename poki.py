@@ -5,9 +5,11 @@ import time
 import asyncio
 import random
 import json
-from new import join, start_game
 from guess import start_quiz, guess_pokemon
-from pus import PokemonPowerOfUs
+#from pus import PokemonPowerOfUs
+from new import join, start_game
+from discord.ext import commands
+from discord.ui import Button, View
 
 POKEMON_PRICES = {
     "bulbasaur": 100,
@@ -21,9 +23,6 @@ POKEMON_PRICES = {
     "blastoise": 190,
     "caterpie": 50,
 }
-user_inventory = []
-user_currency = 500
-user_xp_level = 0
 
 POTION_PRICES = {
     "potion": 50,
@@ -37,7 +36,9 @@ BERRY_PRICES = {
     "sitrus_berry": 50,
     "wiki_berry": 100,
 }
-
+user_inventory = []
+user_currency = 500
+user_xp_level = 0
 
 POKEMON_XP = {
     "bulbasaur": 200,
@@ -133,6 +134,7 @@ async def buy_item(message, item_name, price_dict):
   else:
     await message.channel.send("Invalid item name.")
 
+
 async def sell_item(message, item_name, price_dict):
   global user_inventory, user_currency, user_xp_level
   if item_name in price_dict:
@@ -149,58 +151,67 @@ async def sell_item(message, item_name, price_dict):
   else:
     await message.channel.send("Invalid item name")
 
+
 # Modify the spawn_random_pokemon function
 async def spawn_random_pokemon():
-                    while True:
-                        await asyncio.sleep(180)  # Wait for 5 minutes
+  while True:
+    await asyncio.sleep(180)  # Wait for 5 minutes
 
-                        # Replace "CHANNEL_NAME" with the name of your channel
-                        channel = discord.utils.get(client.get_all_channels(), name="poki2")
+    # Replace "CHANNEL_NAME" with the name of your channel
+    channel = discord.utils.get(client.get_all_channels(), name="poki2")
 
-                        if channel:
-                            # Select a random Pokémon
-                            pokemon_name = random.choice(list(POKEMON_PRICES.keys()))
+    if channel:
+      # Select a random Pokémon
+      pokemon_name = random.choice(list(POKEMON_PRICES.keys()))
 
-                            # Get Pokémon info
-                            pokemon_info = await get_pokemon_info(pokemon_name)
-                            if pokemon_info:
-                                # Get Pokémon image URL
-                                image_urls = await get_pokemon_image_urls(pokemon_info)
-                                if image_urls and image_urls['front_default']:
-                                    # Send message with Pokémon name and picture
-                                    embed = discord.Embed(
-                                        title=f"A wild {pokemon_name.capitalize()} appeared!",
-                                        color=discord.Color.green()
-                                    )
-                                    embed.set_image(url=image_urls['front_default'])
-                                    # Set the message to throw Pokéball
-                                    embed.set_footer(text="Throw your Pokéball to catch the Pokémon")
-                                    # Set Pokéball image URL
-                                    pokéball_url = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
-                                    embed.set_thumbnail(url=pokéball_url)
-                                    spawn_message = await channel.send(embed=embed)
-                                    # Add the Pokéball reaction
-                                    await spawn_message.add_reaction("🤾🏻‍♂️")  # Using soccer ball as a placeholder for Pokéball
-                                    # Allow users to react to catch the Pokémon
-                                    def check(reaction, user):
-                                        return user != client.user and str(reaction.emoji) == '🤾🏻‍♂️' and reaction.message == spawn_message
+      # Get Pokémon info
+      pokemon_info = await get_pokemon_info(pokemon_name)
+      if pokemon_info:
+        # Get Pokémon image URL
+        image_urls = await get_pokemon_image_urls(pokemon_info)
+        if image_urls and image_urls['front_default']:
+          # Send message with Pokémon name and picture
+          embed = discord.Embed(
+              title=f"A wild {pokemon_name.capitalize()} appeared!",
+              color=discord.Color.green())
+          embed.set_image(url=image_urls['front_default'])
+          # Set the message to throw Pokéball
+          embed.set_footer(text="Throw your Pokéball to catch the Pokémon")
+          # Set Pokéball image URL
+          pokéball_url = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+          embed.set_thumbnail(url=pokéball_url)
+          spawn_message = await channel.send(embed=embed)
+          # Add the Pokéball reaction
+          await spawn_message.add_reaction(
+              "🤾🏻‍♂️")  # Using soccer ball as a placeholder for Pokéball
 
-                                    try:
-                                        reaction, user = await client.wait_for('reaction_add', timeout=60.0, check=check)
-                                    except asyncio.TimeoutError:
-                                        await spawn_message.edit(content="The wild Pokémon fled!")
-                                    else:
-                                        # Add the caught Pokémon to the user's inventory
-                                        user_inventory.append(pokemon_name)
-                                        await update_user_data(user.id, user_inventory, user_currency, user_xp_level)
-                                        await spawn_message.edit(content=f"Congratulations {user.mention}! You caught a {pokemon_name.capitalize()}!")
-                                else:
-                                    print(f"Image not found for {pokemon_name.capitalize()}")
-                            else:
-                                print(f"Pokemon {pokemon_name.capitalize()} not found")
-                        else:
-                            print("Channel not found")
+          # Allow users to react to catch the Pokémon
+          def check(reaction, user):
+            return user != client.user and str(
+                reaction.emoji
+            ) == '🤾🏻‍♂️' and reaction.message == spawn_message
 
+          try:
+            reaction, user = await client.wait_for('reaction_add',
+                                                   timeout=60.0,
+                                                   check=check)
+          except asyncio.TimeoutError:
+            await spawn_message.edit(content="The wild Pokémon fled!")
+          else:
+            # Add the caught Pokémon to the user's inventory
+            user_inventory.append(pokemon_name)
+            await update_user_data(user.id, user_inventory, user_currency,
+                                   user_xp_level)
+            await spawn_message.edit(
+                content=
+                f"Congratulations {user.mention}! You caught a {pokemon_name.capitalize()}!"
+            )
+        else:
+          print(f"Image not found for {pokemon_name.capitalize()}")
+      else:
+        print(f"Pokemon {pokemon_name.capitalize()} not found")
+    else:
+      print("Channel not found")
 
 
 # Add this coroutine function to your client's event loop
@@ -234,29 +245,30 @@ async def handle_lootbox(message):
     else:
       await message.channel.send("You received a common reward.")
 
-      async def register_user(ctx):
-        user_id = ctx.author.id
-        username = ctx.author.name
-        user_data = {
-            "id": user_id,
-            "username": username,
-            "profile_id": random.randint(
-                1, 10),  # Generate a random profile ID between 1 and 10
-            "inventory": [],
-            "currency": 500,
-            "collectibles": {
-                "Poke Balls": ["poke_ball", "great_ball", "ultra_ball"],
-                "Potions": ["potion", "super_potion", "hyper_potion"],
-                "Berries": ["oran_berry", "sitrus_berry", "wiki_berry"],
-            },
-            "badges_count": 0,
-            "badges": []
-        }
-        await update_user_data(user_id, user_data["inventory"],
-                               user_data["currency"], user_xp_level)
-        await ctx.send(
-            f"Hello {username}! Your profile has been registered with profile ID {user_data['profile_id']}."
-        )
+
+async def register_user(ctx):
+  user_id = ctx.author.id
+  username = ctx.author.name
+  user_data = {
+      "id": user_id,
+      "username": username,
+      "profile_id":
+      random.randint(1, 10),  # Generate a random profile ID between 1 and 10
+      "inventory": [],
+      "currency": 500,
+      "collectibles": {
+          "Poke Balls": ["poke_ball", "great_ball", "ultra_ball"],
+          "Potions": ["potion", "super_potion", "hyper_potion"],
+          "Berries": ["oran_berry", "sitrus_berry", "wiki_berry"],
+      },
+      "badges_count": 0,
+      "badges": []
+  }
+  await update_user_data(user_id, user_data["inventory"],
+                         user_data["currency"], user_xp_level)
+  await ctx.send(
+      f"Hello {username}! Your profile has been registered with profile ID {user_data['profile_id']}."
+  )
 
 
 async def update_user_data(user_id, inventory, currency, xp_level):
@@ -284,8 +296,8 @@ async def get_user_profile(ctx):
       return data.get(user_id, {}).get("username", None)
 
 
-async def gamest(message):
-  game = PokemonPowerOfUs(message)
+async def gamest(message, bot):
+  game = PokemonPowerOfUs(message, bot)
   game.loop = asyncio.get_event_loop()
   await game.power_of_us_intro()
 
@@ -334,13 +346,80 @@ async def play_trivia_game(message):
           "message", check=lambda m: m.author == message.author, timeout=30)
     except asyncio.TimeoutError:
       await message.channel.send("Time's up! Better luck next time.")
-      return
 
   if is_correct_answer(user_response.content, answer):
     await message.channel.send("Yay, you're right!")
   else:
     await message.channel.send(
         f"Sorry, the correct answer was {answer}. Better luck next time.")
+
+  if user_response.content.lower() == "$exit":
+    await message.channel.send("Thanks for playing! Goodbye.")
+    await client.close()
+    return
+  else:
+    await play_trivia_game(message)
+
+
+TCGDEX_API_URL = "https://api.tcgdex.net/v2/en/cards"
+DECKS_FILE = "decks.json"
+
+
+# Function to fetch a random Pokémon card
+async def get_random_pokemon_card(message):
+  try:
+    response = requests.get(TCGDEX_API_URL)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    card_data = response.json()
+    max_local_id = 400
+    random_local_id = random.randint(1, max_local_id)
+    for card in card_data:
+      if card.get("localId") == str(random_local_id):
+        card_name = card.get("name")
+        image_url = card.get("image") + "/high.webp"
+        user_id = str(message.author.id)
+        if user_id not in decks:
+          decks[user_id] = []
+        card_id = card.get("localId")
+        decks[user_id].append({
+            "name": card_name,
+            "image_url": image_url,
+            "card_id": card_id
+        })
+        save_decks(decks)
+        await message.channel.send(f"Added {card_name} to your deck!")
+        await message.channel.send(f"Image URL: {image_url}")
+        return  # Exit the function after processing
+    await message.channel.send(
+        "No Pokémon card found for the specified local ID.")
+  except (requests.RequestException, KeyError) as e:
+    print("Error fetching random Pokémon card:", e)
+    await message.channel.send(
+        "An error occurred while fetching a Pokémon card.")
+
+
+# Function to create a button row for a card
+def create_card_button(card):
+  return Button(style=discord.ButtonStyle.green,
+                label=card["name"],
+                custom_id=str(card["id"]))
+
+
+# Load existing decks from the JSON file
+def load_decks():
+  if os.path.exists(DECKS_FILE):
+    with open(DECKS_FILE, "r") as file:
+      return json.load(file)
+  return {}
+
+
+# Save decks to the JSON file
+def save_decks(decks):
+  with open(DECKS_FILE, "w") as file:
+    json.dump(decks, file, indent=4)
+
+
+decks = load_decks()
 
 
 # Event handler for when a message is received
@@ -349,12 +428,8 @@ async def on_message(message):
   if message.author == client.user:
     return
 
-  if message.content.lower() == "$exit":
-    await message.channel.send("Thanks for playing! Goodbye.")
-    await client.close()
-    return
 
-  await play_trivia_game(message)
+client = commands.Bot(command_prefix="$", intents=intents)
 
 
 @client.event
@@ -362,20 +437,21 @@ async def on_ready():
   print('We have logged in as {0.user}'.format(client))
   client.loop.create_task(spawn_random_pokemon())
 
+
 @client.event
 async def on_message(message):
   if message.author == client.user:
     return
 
   if message.content.startswith('$hello'):
-    await message.channel.send('Hello! Welcome to our Channel.')
+    await message.channel.send('Hello!')
 
   if message.content.startswith('$help'):
     await message.channel.send(
         'Hello! I am a bot that can help you with your Discord server. I can do a lot of things.'
     )
 
-  if message.content.startswith('$list'):
+  if message.content.startswith('$marketplace'):
     pokemon_list = get_pokemon_list()
     if pokemon_list:
       for pokemon in pokemon_list:
@@ -423,40 +499,51 @@ async def on_message(message):
       await message.channel.send("Error fetching Pokémon list.")
 
   if message.content.startswith('$pokemon'):
-        pokemon_name = message.content.split(' ', 1)[1]
-        pokemon_info = await get_pokemon_info(pokemon_name)  # Await here
-        if pokemon_info:
-            embed = discord.Embed(
-                title=f"{pokemon_name.capitalize()}",
-                color=discord.Color.green()
-            )
-            embed.add_field(name="Name", value=pokemon_info['name'], inline=False)
-            embed.add_field(name="Height", value=pokemon_info['height'], inline=False)
-            embed.add_field(name="Weight", value=pokemon_info['weight'], inline=False)
-            abilities = ', '.join([
-                ability['ability']['name'] for ability in pokemon_info['abilities']
-            ])
-            embed.add_field(name="Abilities", value=abilities, inline=False)
-            image_urls = await get_pokemon_image_urls(pokemon_info)  # Await here
-            if image_urls:
-                # Use a bigger image for Charmander
-                if pokemon_name.lower() == 'charmander':
-                    embed.set_thumbnail(
-                        url="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png"
-                    )
-                else:
-                    embed.set_thumbnail(url=image_urls['front_default'])
-            await message.channel.send(embed=embed)
+    pokemon_name = message.content.split(' ', 1)[1]
+    pokemon_info = get_pokemon_info(pokemon_name)
+    if pokemon_info:
+      embed = discord.Embed(
+          title=f"Pokemon Info for {pokemon_name.capitalize()}",
+          color=discord.Color.green())
+      embed.add_field(name="Name", value=pokemon_info['name'], inline=False)
+      embed.add_field(name="Height",
+                      value=pokemon_info['height'],
+                      inline=False)
+      embed.add_field(name="Weight",
+                      value=pokemon_info['weight'],
+                      inline=False)
+      abilities = ', '.join([
+          ability['ability']['name'] for ability in pokemon_info['abilities']
+      ])
+      embed.add_field(name="Abilities", value=abilities, inline=False)
+      image_urls = get_pokemon_image_urls(pokemon_info)
+      if image_urls:
+        # Use a bigger image for Charmander
+        if pokemon_name.lower() == 'charmander':
+          embed.set_thumbnail(
+              url=
+              "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png"
+          )
         else:
-            await message.channel.send(f"Pokemon {pokemon_name.capitalize()} not found.")
-
+          embed.set_thumbnail(url=image_urls['front_default'])
+      await message.channel.send(embed=embed)
+    else:
+      await message.channel.send(
+          f"Pokemon {pokemon_name.capitalize()} not found.")
 
   if message.content.startswith('$marketplace'):
-    embed = discord.Embed(title="Welcome to the Pokémon Marketplace!", description="Use the following commands:", color=discord.Color.blue())
-    embed.add_field(name="Buy Commands", value="- `$buy <pokemon>`: Buy a Pokémon\n- `$buy_potion <potion_name>`: Buy a potion\n- `$buy_berry <berry_name>`: Buy a berry", inline=False)
-    embed.add_field(name="Sell Command", value="- `$sell <pokemon>`: Sell a Pokémon", inline=False)
-    embed.add_field(name="View Commands", value="- `$inventory`: View your Pokémon inventory\n- `$lootbox`: Open a lootbox", inline=False)
-    await message.channel.send(embed=embed)
+    await message.channel.send(
+        "Welcome to the Pokémon Marketplace! Use the following commands:")
+    await message.channel.send(
+        "- `$buy <pokemon>`: Buy a Pokémon from the marketplace.")
+    await message.channel.send(
+        "- `$buy_potion <potion_name>`: Buy a potion from the marketplace.")
+    await message.channel.send(
+        "- `$buy_berry <berry_name>`: Buy a berry from the marketplace.")
+    await message.channel.send(
+        "- `$sell <pokemon>`: Sell a Pokémon to the marketplace.")
+    await message.channel.send("- `$inventory`: View your Pokémon inventory.")
+    await message.channel.send("- `$lootbox`: Open a lootbox.")
 
   if message.content.startswith('$buy'):
     item_name = message.content.split(' ', 1)[1].lower()
@@ -475,15 +562,13 @@ async def on_message(message):
     await sell_item(message, item_name, POKEMON_PRICES)
 
   if message.content.startswith('$inventory'):
-          if user_inventory:
-            embed = discord.Embed(title="Your Pokémon Inventory", color=discord.Color.blue())
-            for pokemon in user_inventory:
-                embed.add_field(name="● " + pokemon.capitalize(), value="\u200b", inline=False)
-            await message.channel.send(embed=embed)
-          else:
-            embed = discord.Embed(description="Your inventory is empty.", color=discord.Color.blue())
-            await message.channel.send(embed=embed)
-
+    if user_inventory:
+      inventory_list = "Your Pokémon Inventory:\n"
+      for pokemon in user_inventory:
+        inventory_list += f"- {pokemon.capitalize()}\n"
+      await message.channel.send(inventory_list)
+    else:
+      await message.channel.send("Your inventory is empty.")
 
   if message.content.startswith('$lootbox'):
     await handle_lootbox(message)
@@ -505,10 +590,120 @@ async def on_message(message):
       await message.channel.send("User not found in user_data.json")
   if message.content.startswith("$Trivia"):
     await play_trivia_game(message)
+  if message.content.startswith('$story_mode'):
+    await message.channel.send(
+        "Welcome to the game based on The Movie : Pokemon: The Power Of Us")
+    await gamest(message, client)
+
+  if message.content.startswith("$join"):
+    await join(message)
+  if message.content.startswith("$start_game"):
+    await start_game(message)
+
+  if message.content.startswith("$start_trade"):
+    await message.channel.send("Welcome to the Pokémon Trading Card Game!")
+
+  if message.content.startswith("$draw"):
+    await get_random_pokemon_card(message)
+    # if card:
+    # print("Card", card)
+    # await message.channel.send(f"You drew a {card['name']}: {card['image_url']}")
+
+  if message.content.startswith("$show_deck"):
+    user_id = str(message.author.id)
+    if user_id in decks:
+      deck_info = "\n".join(
+          [f"{card['name']} - {card['image_url']}" for card in decks[user_id]])
+      await message.channel.send(f"Your deck:\n{deck_info}")
+    else:
+      await message.channel.send("Your deck is empty.")
+
+  if message.content.startswith("$trade"):
+
+    user_mention, name = message.content.split(" ", 2)[1:]
+    ctx = await client.get_context(message)
+    member_converter = commands.MemberConverter()
+    mentioned_user = await member_converter.convert(ctx, user_mention)
+
+    # Get the ID of the trading user and the mentioned user
+    user_id = str(message.author.id)
+    mentioned_user_id = str(mentioned_user.id)
+
+    # Check if the trading user has the card in their deck
+    if user_id in decks:
+
+      # Convert the searched card name to lowercase
+      name_lower = name.lower()
+
+      for card in decks[user_id]:
+
+        # Convert the card name in the deck to lowercase
+        card_name_lower = card["name"].lower()
+
+        if card_name_lower == name_lower:
+
+          # Confirm trade with mentioned user
+          await message.channel.send(
+              f"{mentioned_user.display_name}, {message.author.display_name} wants to trade a card with you. Type '!yes' to confirm or '!no' to decline."
+          )
+
+          def check(m):
+
+            return m.author == mentioned_user and m.content.lower() in (
+                "!yes",
+                "!no",
+            )
+
+          try:
+
+            msg = await client.wait_for("message", check=check, timeout=30)
+            if msg.content.lower() == "!yes":
+              # Remove the card from the trading user's deck
+              decks[user_id].remove(card)
+
+              # Add the card to the mentioned user's deck
+              if mentioned_user_id not in decks:
+                decks[mentioned_user_id] = []
+              decks[mentioned_user_id].append(card)
+
+              # Save the updated decks
+              save_decks(decks)
+
+              await message.channel.send(
+                  f"{message.author.display_name} traded a card to {mentioned_user.display_name}."
+              )
+            else:
+              await message.channel.send(
+                  f"{mentioned_user.display_name} declined the trade.")
+          except asyncio.TimeoutError:
+            await message.channel.send(
+                f"{mentioned_user.display_name} did not respond in time. Trade request cancelled."
+            )
+          return
+    await message.channel.send("No card found in your deck with that name.")
+
+
+@client.event
+async def on_button_click(interaction):
+  await interaction.response.defer(
+  )  # Acknowledge the button click immediately
+  if isinstance(interaction, discord.Interaction):
+    card_id = int(interaction.data["custom_id"])
+    card = requests.get(f"{TCGDEX_API_URL}/cards/{card_id}").json()["data"]
+    await interaction.followup.send(f"Selected card: {card['name']}")
+
+
+# Command to create a button row for a card
+@client.command()
+async def show_card(ctx, card_id):
+  card = requests.get(f"{TCGDEX_API_URL}/cards/{card_id}").json()["data"]
+  if card:
+    row = create_card_button(card)
+    await ctx.send("Select a card:", view=View(row))
 
 
 try:
-  token = os.getenv("DISCORD_TOKEN") or ""
+  token = os.getenv("BOT_TOKEN") or ""
   if token == "":
     raise Exception("Please add your token to the Secrets pane.")
   client.run(token)
