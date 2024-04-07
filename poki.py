@@ -94,11 +94,7 @@ async def get_pokemon_types(pokemon_info):
   return [type_entry['type']['name'] for type_entry in types]
 
 
-async def format_xp_bar(user_xp_level):
-  xp_req = (user_xp_level + 1) * 100
-  xp_progress = user_xp_level * 100
-  xp_bar = f"XP: Level {user_xp_level} ({xp_progress}/ {xp_req})"
-  return xp_bar
+
 
 
 async def format_pokemon_list(pokemon_list):
