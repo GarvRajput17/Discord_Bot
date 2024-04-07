@@ -153,7 +153,7 @@ async def sell_item(message, item_name, price_dict):
 # Modify the spawn_random_pokemon function
 async def spawn_random_pokemon():
   while True:
-    await asyncio.sleep(300)  # Wait for 5 minutes
+    await asyncio.sleep(180)  # Wait for 5 minutes
 
     # Replace "CHANNEL_NAME" with the name of your channel
     channel = discord.utils.get(client.get_all_channels(), name="poki2")
