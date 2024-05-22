@@ -6,16 +6,14 @@ import asyncio
 import random
 import json
 from guess import start_quiz, guess_pokemon
-from pus import PokemonPowerOfUs
+from story_mode import PokemonPowerOfUs
 from battle import join, start_game
 from discord.ext import commands
 from discord.ui import Button, View
 from discord import ButtonStyle
 from discord import Embed
 import aiohttp
-
-
-
+from mul import PokemonGame
 
 POKEMON_PRICES = {
     "bulbasaur": 100,
@@ -63,28 +61,29 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+client = commands.Bot(command_prefix="$", intents=intents)
 
 
 async def get_pokemon_info(name):
-      url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
-      async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-          if response.status == 200:
-            return await response.json()
-          else:
-            print("Error:", response.status)
-            return None
+  url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
+  async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+      if response.status == 200:
+        return await response.json()
+      else:
+        print("Error:", response.status)
+        return None
 
 
 def get_pokemon_list():
-      url = "https://pokeapi.co/api/v2/pokemon?limit=15"  # Change the limit as needed
-      response = requests.get(url)
-      if response.status_code == 200:
-        data = response.json()
-        return [pokemon['name'] for pokemon in data.get('results', [])]
-      else:
-        print("Error:", response.status_code)
-        return None
+  url = "https://pokeapi.co/api/v2/pokemon?limit=15"  # Change the limit as needed
+  response = requests.get(url)
+  if response.status_code == 200:
+    data = response.json()
+    return [pokemon['name'] for pokemon in data.get('results', [])]
+  else:
+    print("Error:", response.status_code)
+    return None
 
 
 async def get_pokemon_stats(pokemon_info):
@@ -96,8 +95,6 @@ async def get_pokemon_stats(pokemon_info):
 async def get_pokemon_types(pokemon_info):
   types = pokemon_info.get('types', [])
   return [type_entry['type']['name'] for type_entry in types]
-
-
 
 
 async def format_pokemon_list(pokemon_list):
@@ -216,58 +213,35 @@ async def spawn_random_pokemon():
 
 
 async def handle_lootbox(message):
-        global user_inventory, user_currency, user_xp_level
-        reward_type = random.choice(["xp", "currency", "rare"])
-        if reward_type == "xp":
-          reward = random.choice([50, 100, 150, 200])
-          user_xp_level += reward
-          await message.channel.send(
-              f"You received {reward} XP! Your XP level is now {user_xp_level}.")
-        elif reward_type == "currency":
-          reward = random.choice([50, 100, 150, 200])
-          user_currency += reward
-          await message.channel.send(
-              f"You received {reward} currency! Your total currency is now {user_currency}."
-          )
-        elif reward_type == "rare":
-          rare_rewards = ["Squirtle", "Charmander", "Pikachu"]
-          rare_probabilities = [0.1, 0.1, 0.1]
-          if random.random() < sum(rare_probabilities):
-            rare_reward = random.choices(rare_rewards, weights=rare_probabilities)[0]
-            user_inventory[rare_reward.lower()] = user_inventory.get(
-                rare_reward.lower(), 0) + 1
-            user_xp_level += POKEMON_XP.get(rare_reward.lower(), 0)
-            await message.channel.send(
-                f"Congratulations! You caught a rare {rare_reward}! Check your inventory."
-            )
-          else:
-            await message.channel.send("You received a common reward.")
+  global user_inventory, user_currency, user_xp_level
+  reward_type = random.choice(["xp", "currency", "rare"])
+  if reward_type == "xp":
+    reward = random.choice([50, 100, 150, 200])
+    user_xp_level += reward
+    await message.channel.send(
+        f"You received {reward} XP! Your XP level is now {user_xp_level}.")
+  elif reward_type == "currency":
+    reward = random.choice([50, 100, 150, 200])
+    user_currency += reward
+    await message.channel.send(
+        f"You received {reward} currency! Your total currency is now {user_currency}."
+    )
+  elif reward_type == "rare":
+    rare_rewards = ["Squirtle", "Charmander", "Pikachu"]
+    rare_probabilities = [0.1, 0.1, 0.1]
+    if random.random() < sum(rare_probabilities):
+      rare_reward = random.choices(rare_rewards, weights=rare_probabilities)[0]
+      user_inventory[rare_reward.lower()] = user_inventory.get(
+          rare_reward.lower(), 0) + 1
+      user_xp_level += POKEMON_XP.get(rare_reward.lower(), 0)
+      await message.channel.send(
+          f"Congratulations! You caught a rare {rare_reward}! Check your inventory."
+      )
+    else:
+      await message.channel.send("Better luck next time")
 
-
-
-async def register_user(ctx):
-  user_id = ctx.author.id
-  username = ctx.author.name
-  user_data = {
-      "id": user_id,
-      "username": username,
-      "profile_id":
-      random.randint(1, 50),  # Generate a random profile ID between 1 and 10
-      "inventory": [],
-      "currency": 500,
-      "collectibles": {
-          "Poke Balls": ["poke_ball", "great_ball", "ultra_ball"],
-          "Potions": ["potion", "super_potion", "hyper_potion"],
-          "Berries": ["oran_berry", "sitrus_berry", "wiki_berry"],
-      },
-      "badges_count": 0,
-      "badges": []
-  }
-  await update_user_data(user_id, user_data["inventory"],
-                         user_data["currency"], user_xp_level)
-  await ctx.send(
-      f"Hello {username}! Your profile has been registered with profile ID {user_data['profile_id']}."
-  )
+    await update_user_data(message.author.id, user_inventory, user_currency,
+                           user_xp_level)
 
 
 async def update_user_data(user_id, inventory, currency, xp_level):
@@ -283,6 +257,32 @@ async def update_user_data(user_id, inventory, currency, xp_level):
     file.truncate()
 
 
+@client.command()
+async def register_user(ctx):
+  user_id = ctx.author.id
+  username = ctx.author.name
+  user_data = {
+      "id": user_id,
+      "username": username,
+      "profile_id":
+      random.randint(1, 50),  # Generate a random profile ID between 1 and 50
+      "inventory": [],
+      "currency": 500,
+      "collectibles": {
+          "Poke Balls": ["poke_ball", "great_ball", "ultra_ball"],
+          "Potions": ["potion", "super_potion", "hyper_potion"],
+          "Berries": ["oran_berry", "sitrus_berry", "wiki_berry"],
+      },
+      "badges_count": 0,
+      "badges": []
+  }
+  await update_user_data(user_id, user_data["inventory"],
+                         user_data["currency"], user_xp_level)
+  await ctx.channel.send(
+      f"Hello {username}! Your profile has been registered with profile ID {user_data['profile_id']}."
+  )
+
+
 async def get_user_profile(ctx):
   user_id = str(ctx.author.id)
   if not os.path.exists("user_data.json"):
@@ -292,7 +292,7 @@ async def get_user_profile(ctx):
   else:
     with open("user_data.json", "r") as file:
       data = json.load(file)
-      return data.get(user_id, {}).get("username", None)
+      return data.get(user_id, {}).get("username")
 
 
 async def gamest(message, bot):
@@ -319,83 +319,101 @@ def is_correct_answer(user_answer, correct_answer):
 
 # Function to play the trivia game
 async def play_trivia_game(message):
-      image_url, question, answer, hints = get_trivia_question()
+  image_url, question, answer, hints = get_trivia_question()
 
-      embed = discord.Embed(title="Trivia Game", color=discord.Color.gold())
-      embed.add_field(name="Question", value=question, inline=False)
-      embed.set_image(url=image_url)
+  embed = discord.Embed(title="Trivia Game", color=discord.Color.gold())
+  embed.add_field(name="Question", value=question, inline=False)
+  embed.set_image(url=image_url)
 
-      await message.channel.send(embed=embed)
-      await message.channel.send("What is your answer? (Type '$hint' for a hint)")
+  await message.channel.send(embed=embed)
+  await message.channel.send("What is your answer? (Type '$hint' for a hint)")
 
-      try:
-          user_response = await client.wait_for(
-              "message", check=lambda m: m.author == message.author, timeout=30)
-      except asyncio.TimeoutError:
-          await message.channel.send("Time's up! Better luck next time.")
-          return
+  try:
+    user_response = await client.wait_for(
+        "message", check=lambda m: m.author == message.author, timeout=30)
+  except asyncio.TimeoutError:
+    await message.channel.send("Time's up! Better luck next time.")
+    return
 
-      if user_response.content.lower() == "$hint":
-          hint_embed = discord.Embed(title="Hints",
-                                     description=', '.join(hints),
-                                     color=discord.Color.blue())
-          await message.channel.send(embed=hint_embed)
-          try:
-              user_response = await client.wait_for(
-                  "message", check=lambda m: m.author == message.author, timeout=30)
-          except asyncio.TimeoutError:
-              await message.channel.send("Time's up! Better luck next time.")
+  if user_response.content.lower() == "$hint":
+    hint_embed = discord.Embed(title="Hints",
+                               description=', '.join(hints),
+                               color=discord.Color.blue())
+    await message.channel.send(embed=hint_embed)
+    try:
+      user_response = await client.wait_for(
+          "message", check=lambda m: m.author == message.author, timeout=30)
+    except asyncio.TimeoutError:
+      await message.channel.send("Time's up! Better luck next time.")
 
-      if is_correct_answer(user_response.content, answer):
-          await message.channel.send("Yay, you're right!")
-      else:
-          await message.channel.send(
-              f"Sorry, the correct answer was {answer}. Better luck next time.")
+  if is_correct_answer(user_response.content, answer):
+    await message.channel.send("Yay, you're right!")
+  else:
+    await message.channel.send(
+        f"Sorry, the correct answer was {answer}. Better luck next time.")
 
-      if user_response.content.lower() == "$exit":
-          await message.channel.send("Thanks for playing! Goodbye.")
-          
-          return
-      else:
-          await play_trivia_game(message)
+  if user_response.content.lower() == "$exit":
+    await message.channel.send("Thanks for playing! Goodbye.")
+
+    return
+  else:
+    await play_trivia_game(message)
 
 
 TCGDEX_API_URL = "https://api.tcgdex.net/v2/en/cards"
 DECKS_FILE = "decks.json"
 
 
+async def battlemult(message, opponent):
+    # Instantiate the PokemonGame class
+    game = PokemonGame(client)
+
+    if opponent is not None:
+        # Call the challenge method to initiate the battle challenge
+        challenge_result = await game.challenge(message, opponent.id)
+
+        if challenge_result:
+            # If the challenge is accepted, proceed with the battle
+            await game.run_battle(message, message.author.id, opponent.id)
+    else:
+        await message.channel.send("User not found.")
+
+
+
 # Function to fetch a random Pokémon card
 async def get_random_pokemon_card(message):
-          try:
-              response = requests.get(TCGDEX_API_URL)
-              response.raise_for_status()  # Raise an exception for HTTP errors
-              card_data = response.json()
-              max_local_id = 400
-              random_local_id = random.randint(1, max_local_id)
-              for card in card_data:
-                  if card.get("localId") == str(random_local_id):
-                      card_name = card.get("name")
-                      image_url = card.get("image") + "/high.webp"
-                      user_id = str(message.author.id)
-                      if user_id not in decks:
-                          decks[user_id] = []
-                      card_id = card.get("localId")
-                      decks[user_id].append({
-                          "name": card_name,
-                          "image_url": image_url,
-                          "card_id": card_id
-                      })
-                      save_decks(decks)
-                      embed = discord.Embed(title="Added to Your Deck!", description=f"Added {card_name} to your deck!", color=discord.Color.green())
-                      embed.set_image(url=image_url)
-                      await message.channel.send(embed=embed)
-                      return  # Exit the function after processing
-              await message.channel.send("No Pokémon card found for the specified local ID.")
-          except (requests.RequestException, KeyError) as e:
-              print("Error fetching random Pokémon card:", e)
-              await message.channel.send("An error occurred while fetching a Pokémon card.")
-
-
+  try:
+    response = requests.get(TCGDEX_API_URL)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    card_data = response.json()
+    max_local_id = 400
+    random_local_id = random.randint(1, max_local_id)
+    for card in card_data:
+      if card.get("localId") == str(random_local_id):
+        card_name = card.get("name")
+        image_url = card.get("image") + "/high.webp"
+        user_id = str(message.author.id)
+        if user_id not in decks:
+          decks[user_id] = []
+        card_id = card.get("localId")
+        decks[user_id].append({
+            "name": card_name,
+            "image_url": image_url,
+            "card_id": card_id
+        })
+        save_decks(decks)
+        embed = discord.Embed(title="Added to Your Deck!",
+                              description=f"Added {card_name} to your deck!",
+                              color=discord.Color.green())
+        embed.set_image(url=image_url)
+        await message.channel.send(embed=embed)
+        return  # Exit the function after processing
+    await message.channel.send(
+        "No Pokémon card found for the specified local ID.")
+  except (requests.RequestException, KeyError) as e:
+    print("Error fetching random Pokémon card:", e)
+    await message.channel.send(
+        "An error occurred while fetching a Pokémon card.")
 
 
 # Function to create a button row for a card
@@ -451,176 +469,263 @@ async def on_message(message):
     return
 
   if message.content.startswith('$hello'):
-      # Create an interactive and friendly greeting message
-      greeting_message = f"Hello there, {message.author.mention}! 😊"
-      greeting_message += "\n\nWelcome to our Pokémon Discord server! 🌟"
-      greeting_message += "\n\nI'm here to assist you with all your Pokémon needs. If you have any questions or need help, just let me know!"
-      greeting_message += "\n\nHere are some things I can do for you:"
-      greeting_message += "\n- Use `$pokemon <name>` to get detailed information about a specific Pokémon."
-      greeting_message += "\n- Use `$marketplace` to explore the Pokémon Marketplace."
-      greeting_message += "\n- Use `$startquiz` to start a Pokémon quiz."
-      greeting_message += "\n- Use `$guess` to guess the name of a Pokémon."
-      greeting_message += "\n- Use `$start_game` to start a Pokémon battle game."
-      greeting_message += "\n- Use `$story_mode` to play a Pokémon story-based game."
-      greeting_message += "\n\nFeel free to explore and have fun! If you need assistance, just ask. Enjoy your time here! 🎉"
+    # Create an interactive and friendly greeting message
+    greeting_message = f"Hello there, {message.author.mention}! 😊"
+    greeting_message += "\n\nWelcome to our Pokémon Discord server! 🌟"
+    greeting_message += "\n\nI'm here to assist you with all your Pokémon needs. If you have any questions or need help, just let me know!"
+    greeting_message += "\n\nHere are some things I can do for you:"
+    greeting_message += "\n- Use `$pokemon <name>` to get detailed information about a specific Pokémon."
+    greeting_message += "\n- Use `$marketplace` to explore the Pokémon Marketplace."
+    greeting_message += "\n- Use `$startquiz` to start a Pokémon quiz."
+    greeting_message += "\n- Use `$guess` to guess the name of a Pokémon."
+    greeting_message += "\n- Use `$start_game` to start a Pokémon battle game."
+    greeting_message += "\n- Use `$story_mode` to play a Pokémon story-based game."
+    greeting_message += "\n\nFeel free to explore and have fun! If you need assistance, just ask. Enjoy your time here! 🎉"
 
-      # Create an embed with the greeting message
-      embed = discord.Embed(title="Welcome to the Pokémon Discord Server! 🌟", description=greeting_message, color=discord.Color.green())
+    # Create an embed with the greeting message
+    embed = discord.Embed(title="Welcome to the Pokémon Discord Server! 🌟",
+                          description=greeting_message,
+                          color=discord.Color.green())
 
-      # Add a thumbnail image
-      embed.set_thumbnail(url="https://cdn2.bulbagarden.net/upload/thumb/9/98/Pok%C3%A9_Ball_PMS.png/1200px-Pok%C3%A9_Ball_PMS.png")
+    # Add a thumbnail image
+    embed.set_thumbnail(
+        url=
+        "https://cdn2.bulbagarden.net/upload/thumb/9/98/Pok%C3%A9_Ball_PMS.png/1200px-Pok%C3%A9_Ball_PMS.png"
+    )
 
-      # Send the embedded greeting message
-      await message.channel.send(embed=embed)
-    
+    # Send the embedded greeting message
+    await message.channel.send(embed=embed)
 
   if message.content.startswith('$help'):
-      # Create an embed
-      embed = discord.Embed(
-          title="Bot Commands",
-          description="Hello! I am a bot that can help you with your Discord server. I can do a lot of things.",
-          color=discord.Color.blue()  # You can change the color if you want
-      )
+    # Create an embed
+    embed = discord.Embed(
+        title="Bot Commands",
+        description=
+        "Hello! I am a bot that can help you with your Discord server. I can do a lot of things.",
+        color=discord.Color.blue()  # You can change the color if you want
+    )
 
-      # Add fields for each command
-      embed.add_field(name="$hello", value="Displays a friendly greeting message.", inline=False)
-      embed.add_field(name="$marketlist", value="Displays a list of Pokémon in the marketplace.", inline=False)
-      embed.add_field(name="$pokemon <name>", value="Get detailed information about a specific Pokémon.", inline=False)
-      embed.add_field(name="$marketplace", value="Explore the Pokémon Marketplace.", inline=False)
-      embed.add_field(name="$buy <pokemon>", value="Buy a Pokémon from the marketplace.", inline=False)
-      embed.add_field(name="$buy_potion <potion_name>", value="Buy a potion from the marketplace.", inline=False)
-      embed.add_field(name="$buy_berry <berry_name>", value="Buy a berry from the marketplace.", inline=False)
-      embed.add_field(name="$sell <pokemon>", value="Sell a Pokémon to the marketplace.", inline=False)
-      embed.add_field(name="$inventory", value="View your Pokémon inventory.", inline=False)
-      embed.add_field(name="$lootbox", value="Open a lootbox.", inline=False)
-      embed.add_field(name="$startquiz", value="Start a Pokémon quiz.", inline=False)
-      embed.add_field(name="$guess", value="Guess the name of a Pokémon.", inline=False)
-      embed.add_field(name="$Sign_in", value="Register your profile.", inline=False)
-      embed.add_field(name="$Info", value="Get information about your profile.", inline=False)
-      embed.add_field(name="$Trivia", value="Start a trivia game.", inline=False)
-      embed.add_field(name="$story_mode", value="Play a Pokémon story-based game.", inline=False)
-      embed.add_field(name="$join", value="Join a Pokémon battle game.", inline=False)
-      embed.add_field(name="$start_game", value="Start a Pokémon battle game.", inline=False)
-      embed.add_field(name="$draw", value="Draw a random Pokémon card.", inline=False)
-      embed.add_field(name="$show_deck", value="Show your Pokémon card deck.", inline=False)
-      embed.add_field(name="$trade <@mention> <card_name>", value="Trade a Pokémon card with another user.", inline=False)
+    # Add fields for each command
+    embed.add_field(name="$hello",
+                    value="Displays a friendly greeting message.",
+                    inline=False)
+    embed.add_field(name="$marketlist",
+                    value="Displays a list of Pokémon in the marketplace.",
+                    inline=False)
+    embed.add_field(name="$pokemon <name>",
+                    value="Get detailed information about a specific Pokémon.",
+                    inline=False)
+    embed.add_field(name="$marketplace",
+                    value="Explore the Pokémon Marketplace.",
+                    inline=False)
+    embed.add_field(name="$buy <pokemon>",
+                    value="Buy a Pokémon from the marketplace.",
+                    inline=False)
+    embed.add_field(name="$buy_potion <potion_name>",
+                    value="Buy a potion from the marketplace.",
+                    inline=False)
+    embed.add_field(name="$buy_berry <berry_name>",
+                    value="Buy a berry from the marketplace.",
+                    inline=False)
+    embed.add_field(name="$sell <pokemon>",
+                    value="Sell a Pokémon to the marketplace.",
+                    inline=False)
+    embed.add_field(name="$inventory",
+                    value="View your Pokémon inventory.",
+                    inline=False)
+    embed.add_field(name="$lootbox", value="Open a lootbox.", inline=False)
+    embed.add_field(name="$startquiz",
+                    value="Start a Pokémon quiz.",
+                    inline=False)
+    embed.add_field(name="$guess",
+                    value="Guess the name of a Pokémon.",
+                    inline=False)
+    embed.add_field(name="$Sign_in",
+                    value="Register your profile.",
+                    inline=False)
+    embed.add_field(name="$Info",
+                    value="Get information about your profile.",
+                    inline=False)
+    embed.add_field(name="$Trivia", value="Start a trivia game.", inline=False)
+    embed.add_field(name="$story_mode",
+                    value="Play a Pokémon story-based game.",
+                    inline=False)
+    embed.add_field(name="$join",
+                    value="Join a Pokémon battle game.",
+                    inline=False)
+    embed.add_field(name="$start_game",
+                    value="Start a Pokémon battle game.",
+                    inline=False)
+    embed.add_field(name="$draw",
+                    value="Draw a random Pokémon card.",
+                    inline=False)
+    embed.add_field(name="$show_deck",
+                    value="Show your Pokémon card deck.",
+                    inline=False)
+    embed.add_field(name="$trade <@mention> <card_name>",
+                    value="Trade a Pokémon card with another user.",
+                    inline=False)
 
-      # Send the embed
-      await message.channel.send(embed=embed)
+    # Send the embed
+    await message.channel.send(embed=embed)
+
+  if message.content.startswith('$challenge'):
+    opponent_id = message.mentions[0].id
+    game = PokemonGame(client)
+    accepted = await game.challenge(message.channel, opponent_id)
+    if accepted:
+      await game.run_battle(message.channel, message.author.id, opponent_id)
 
   if message.content.startswith('$marketlist'):
-              pokemon_list = get_pokemon_list()
-              if pokemon_list:
-                  for pokemon in pokemon_list:
-                      pokemon_info = await get_pokemon_info(pokemon)
-                      if pokemon_info:
-                          stats = await get_pokemon_stats(pokemon_info)
-                          types = await get_pokemon_types(pokemon_info)
+    pokemon_list = get_pokemon_list()
+    if pokemon_list:
+      for pokemon in pokemon_list:
+        pokemon_info = await get_pokemon_info(pokemon)
+        if pokemon_info:
+          stats = await get_pokemon_stats(pokemon_info)
+          types = await get_pokemon_types(pokemon_info)
 
-                          # Extract HP and Speed stats
-                          hp_stat = next((stat['base_stat']
-                                          for stat in pokemon_info.get('stats', [])
-                                          if stat['stat']['name'] == 'hp'), None)
-                          speed_stat = next((stat['base_stat']
-                                             for stat in pokemon_info.get('stats', [])
-                                             if stat['stat']['name'] == 'speed'), None)
+          # Extract HP and Speed stats
+          hp_stat = next((stat['base_stat']
+                          for stat in pokemon_info.get('stats', [])
+                          if stat['stat']['name'] == 'hp'), None)
+          speed_stat = next((stat['base_stat']
+                             for stat in pokemon_info.get('stats', [])
+                             if stat['stat']['name'] == 'speed'), None)
 
-                          # Format the info
-                          formatted_info = f"HP: {hp_stat} | Speed: {speed_stat} | Types: {', '.join(types)}"
+          # Format the info
+          formatted_info = f"HP: {hp_stat} | Speed: {speed_stat} | Types: {', '.join(types)}"
 
-                          # Determine the color based on the Pokémon's type
-                          color = discord.Color.red()  # Default color
-                          for type in types:
-                                if type == 'water':
-                                  color = discord.Color.blue()
-                                elif type == 'bug':
-                                  color = discord.Color(0x8B4513)  # Brown color
-                                elif type == 'fire':
-                                  color = discord.Color.orange()
-                                elif type == 'grass':
-                                  color = discord.Color.green()
-                                elif type == 'electric':
-                                  color = discord.Color.yellow()
-                                elif type == 'poison':
-                                  color = discord.Color.purple()
+          # Determine the color based on the Pokémon's type
+          color = discord.Color.red()  # Default color
+          for type in types:
+            if type == 'water':
+              color = discord.Color.blue()
+            elif type == 'bug':
+              color = discord.Color(0x8B4513)  # Brown color
+            elif type == 'fire':
+              color = discord.Color.orange()
+            elif type == 'grass':
+              color = discord.Color.green()
+            elif type == 'electric':
+              color = discord.Color.yellow()
+            elif type == 'poison':
+              color = discord.Color.purple()
 
-                              # Create and send the embed
-                          embed = discord.Embed(title=f"{pokemon.capitalize()}",
-                                                    description=formatted_info,
-                                                    color=color)
-                          await message.channel.send(embed=embed)
-                      else:
-                              await message.channel.send(
-                                  f"Pokemon {pokemon.capitalize()} not found.")
-                  # Add potion listings
-                  embed = discord.Embed(title="Pokémon Marketplace", color=0xFFD700)  # Gold color
-                  embed.add_field(name="Potions:",
-                                  value="\n".join([f"{potion.capitalize()}: ${price}" for potion, price in POTION_PRICES.items()]),
-                                  inline=False)
+          # Create and send the embed
+          embed = discord.Embed(title=f"{pokemon.capitalize()}",
+                                description=formatted_info,
+                                color=color)
+          await message.channel.send(embed=embed)
+        else:
+          await message.channel.send(
+              f"Pokemon {pokemon.capitalize()} not found.")
+      # Add potion listings
+      embed = discord.Embed(title="Pokémon Marketplace",
+                            color=0xFFD700)  # Gold color
+      embed.add_field(name="Potions:",
+                      value="\n".join([
+                          f"{potion.capitalize()}: ${price}"
+                          for potion, price in POTION_PRICES.items()
+                      ]),
+                      inline=False)
 
-                  # Add berry listings
-                  embed.add_field(name="Berries:",
-                                  value="\n".join([f"{berry.capitalize()}: ${price}" for berry, price in BERRY_PRICES.items()]),
-                                  inline=False)
+      # Add berry listings
+      embed.add_field(name="Berries:",
+                      value="\n".join([
+                          f"{berry.capitalize()}: ${price}"
+                          for berry, price in BERRY_PRICES.items()
+                      ]),
+                      inline=False)
 
-                  # Set footer with attribution or any other information
-                  embed.set_footer(text="Explore the marketplace and become the ultimate Pokémon trainer!")
+      # Set footer with attribution or any other information
+      embed.set_footer(
+          text=
+          "Explore the marketplace and become the ultimate Pokémon trainer!")
 
-                  # Send the embedded message
-                  await message.channel.send(embed=embed)
-              else:
-                  await message.channel.send("Error fetching Pokémon list.")
+      # Send the embedded message
+      await message.channel.send(embed=embed)
+    else:
+      await message.channel.send("Error fetching Pokémon list.")
 
+
+  if message.content.startswith('$mult'):
+    
+    
+    # Extract the mentioned user from the message content
+    opponent_mention = message.content.split()[1]  # Assuming the opponent is mentioned in the message
+    member_converter = commands.MemberConverter()
+    try:
+        # Create a dummy context with bot attribute
+        dummy_context = await client.get_context(message)
+        opponent = await member_converter.convert(dummy_context, opponent_mention)
+        # Call the battlemult function with the message and mentioned opponent
+        await battlemult(message, opponent)
+    except commands.MemberNotFound:
+        await message.channel.send("User not found.")
 
 
 
   if message.content.startswith('$pokemon'):
-                        pokemon_name = message.content.split(' ', 1)[1]
-                        pokemon_info = await get_pokemon_info(pokemon_name)  # Await here
-                        if pokemon_info:
-                            embed = discord.Embed(
-                                title=f"Pokemon Info for {pokemon_name.capitalize()}",
-                                color=discord.Color.green())
-                            embed.add_field(name="Name", value=pokemon_info['name'], inline=False)
-                            embed.add_field(name="Height", value=pokemon_info['height'], inline=False)
-                            embed.add_field(name="Weight", value=pokemon_info['weight'], inline=False)
-                            abilities = ', '.join([ability['ability']['name'] for ability in pokemon_info['abilities']])
-                            embed.add_field(name="Abilities", value=abilities, inline=False)
-                            image_urls = await get_pokemon_image_urls(pokemon_info)  # Await here
-                            if image_urls:
-                                # Use a bigger image for Charmander
-                                if pokemon_name.lower() == 'charmander':
-                                    embed.set_thumbnail(
-                                        url="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png"
-                                    )
-                                else:
-                                    embed.set_thumbnail(url=image_urls['front_default'])
-                            await message.channel.send(embed=embed)
-                        else:
-                            await message.channel.send(f"Pokemon {pokemon_name.capitalize()} not found.")
+    pokemon_name = message.content.split(' ', 1)[1]
+    pokemon_info = await get_pokemon_info(pokemon_name)  # Await here
+    if pokemon_info:
+      embed = discord.Embed(
+          title=f"Pokemon Info for {pokemon_name.capitalize()}",
+          color=discord.Color.green())
+      embed.add_field(name="Name", value=pokemon_info['name'], inline=False)
+      embed.add_field(name="Height",
+                      value=pokemon_info['height'],
+                      inline=False)
+      embed.add_field(name="Weight",
+                      value=pokemon_info['weight'],
+                      inline=False)
+      abilities = ', '.join([
+          ability['ability']['name'] for ability in pokemon_info['abilities']
+      ])
+      embed.add_field(name="Abilities", value=abilities, inline=False)
+      image_urls = await get_pokemon_image_urls(pokemon_info)  # Await here
+      if image_urls:
+        # Use a bigger image for Charmander
+        if pokemon_name.lower() == 'charmander':
+          embed.set_thumbnail(
+              url=
+              "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png"
+          )
+        else:
+          embed.set_thumbnail(url=image_urls['front_default'])
+      await message.channel.send(embed=embed)
+    else:
+      await message.channel.send(
+          f"Pokemon {pokemon_name.capitalize()} not found.")
 
   if message.content.startswith('$marketplace'):
-      # Create the embedded message
-      embed = Embed(title="Welcome to the Pokémon Marketplace!",
-                    description="Use the following commands to interact with the marketplace:",
-                    color=0xFFD700)  # Gold color
+    # Create the embedded message
+    embed = Embed(
+        title="Welcome to the Pokémon Marketplace!",
+        description=
+        "Use the following commands to interact with the marketplace:",
+        color=0xFFD700)  # Gold color
 
-      # Add command descriptions
-      embed.add_field(name="Marketplace Commands:",
-                      value="- `$market_list`: Displays list of Pokémon in the marketplace.\n"
-                            "- `$buy <pokemon>`: Buy a Pokémon from the marketplace.\n"
-                            "- `$buy_potion <potion_name>`: Buy a potion from the marketplace.\n"
-                            "- `$buy_berry <berry_name>`: Buy a berry from the marketplace.\n"
-                            "- `$sell <pokemon>`: Sell a Pokémon to the marketplace.\n"
-                            "- `$inventory`: View your Pokémon inventory.\n"
-                            "- `$lootbox`: Open a lootbox.",
-                      inline=False)
+    # Add command descriptions
+    embed.add_field(
+        name="Marketplace Commands:",
+        value="- `$market_list`: Displays list of Pokémon in the marketplace.\n"
+        "- `$buy <pokemon>`: Buy a Pokémon from the marketplace.\n"
+        "- `$buy_potion <potion_name>`: Buy a potion from the marketplace.\n"
+        "- `$buy_berry <berry_name>`: Buy a berry from the marketplace.\n"
+        "- `$sell <pokemon>`: Sell a Pokémon to the marketplace.\n"
+        "- `$inventory`: View your Pokémon inventory.\n"
+        "- `$lootbox`: Open a lootbox.",
+        inline=False)
 
-      # Set footer with attribution or any other information
-      embed.set_footer(text="Explore the marketplace and become the ultimate Pokémon trainer!")
+    # Set footer with attribution or any other information
+    embed.set_footer(
+        text="Explore the marketplace and become the ultimate Pokémon trainer!"
+    )
 
-      # Send the embedded message
-      await message.channel.send(embed=embed)
+    # Send the embedded message
+    await message.channel.send(embed=embed)
 
   if message.content.startswith('$buy'):
     item_name = message.content.split(' ', 1)[1].lower()
@@ -639,20 +744,19 @@ async def on_message(message):
     await sell_item(message, item_name, POKEMON_PRICES)
 
   if message.content.startswith('$inventory'):
-                            if user_inventory:
-                                # Create an embedded inventory
-                                embed = discord.Embed(title="Your Inventory", color=discord.Color.blue())
+    if user_inventory:
+      # Create an embedded inventory
+      embed = discord.Embed(title="Your Inventory", color=discord.Color.blue())
 
-                                # Add items to the inventory
-                                inventory_list = "\n".join([f"\u2022 {pokemon.capitalize()}" for pokemon in user_inventory])
-                                embed.add_field(name="List", value=inventory_list, inline=False)
+      # Add items to the inventory
+      inventory_list = "\n".join(
+          [f"\u2022 {pokemon.capitalize()}" for pokemon in user_inventory])
+      embed.add_field(name="List", value=inventory_list, inline=False)
 
-                                # Send the embedded inventory
-                                await message.channel.send(embed=embed)
-                            else:
-                                await message.channel.send("Your inventory is empty.")
-
-
+      # Send the embedded inventory
+      await message.channel.send(embed=embed)
+    else:
+      await message.channel.send("Your inventory is empty.")
 
   if message.content.startswith('$lootbox'):
     await handle_lootbox(message)
@@ -668,8 +772,8 @@ async def on_message(message):
 
   if message.content.startswith('$Info'):
     username = await get_user_profile(message)
-    if username:
-      await message.channel.send(f"User's username: {username}")
+    if message.author.id:
+      await message.channel.send(f"User's ID: {message.channel.id}")
     else:
       await message.channel.send("User not found in user_data.json")
   if message.content.startswith("$Trivia"):
@@ -694,19 +798,16 @@ async def on_message(message):
     # await message.channel.send(f"You drew a {card['name']}: {card['image_url']}")
 
   if message.content.startswith("$show_deck"):
-                user_id = str(message.author.id)
-                if user_id in decks:
-                    for card in decks[user_id]:
-                        card_name = card["name"]
-                        card_image_url = card["image_url"]
-                        embed = discord.Embed(title=card_name, color=discord.Color.blue())
-                        embed.set_image(url=card_image_url)
-                        await message.channel.send(embed=embed)
-                else:
-                    await message.channel.send("Your deck is empty.")
-
-
-
+    user_id = str(message.author.id)
+    if user_id in decks:
+      for card in decks[user_id]:
+        card_name = card["name"]
+        card_image_url = card["image_url"]
+        embed = discord.Embed(title=card_name, color=discord.Color.blue())
+        embed.set_image(url=card_image_url)
+        await message.channel.send(embed=embed)
+    else:
+      await message.channel.send("Your deck is empty.")
 
   if message.content.startswith("$trade"):
 
@@ -719,12 +820,13 @@ async def on_message(message):
     user_id = str(message.author.id)
     mentioned_user_id = str(mentioned_user.id)
 
-    # Check if the trading user has the card in their deck
-    if user_id in decks:
+    # Check if both trading users have cards in their decks
+    if user_id in decks and mentioned_user_id in decks:
 
       # Convert the searched card name to lowercase
       name_lower = name.lower()
 
+      # Find the card in the trading user's deck
       for card in decks[user_id]:
 
         # Convert the card name in the deck to lowercase
@@ -738,30 +840,47 @@ async def on_message(message):
           )
 
           def check(m):
-
-            return m.author == mentioned_user and m.content.lower() in (
-                "!yes",
-                "!no",
-            )
+            return m.author == mentioned_user and m.content.lower() in ("!yes",
+                                                                        "!no")
 
           try:
-
             msg = await client.wait_for("message", check=check, timeout=30)
             if msg.content.lower() == "!yes":
-              # Remove the card from the trading user's deck
-              decks[user_id].remove(card)
-
-              # Add the card to the mentioned user's deck
-              if mentioned_user_id not in decks:
-                decks[mentioned_user_id] = []
-              decks[mentioned_user_id].append(card)
-
-              # Save the updated decks
-              save_decks(decks)
-
+              # Prompt mentioned user to select a card for trade
               await message.channel.send(
-                  f"{message.author.display_name} traded a card to {mentioned_user.display_name}."
+                  f"{mentioned_user.display_name}, please select a card from your deck to trade in return."
               )
+
+              def check_card_selection(m):
+                return m.author == mentioned_user
+
+              try:
+                selection_msg = await client.wait_for(
+                    "message", check=check_card_selection, timeout=30)
+                selected_card_name = selection_msg.content.strip().lower()
+
+                # Find the selected card in the mentioned user's deck
+                for mentioned_user_card in decks[mentioned_user_id]:
+                  mentioned_user_card_name_lower = mentioned_user_card[
+                      "name"].lower()
+                  if mentioned_user_card_name_lower == selected_card_name:
+                    # Perform the trade
+                    decks[user_id].remove(card)
+                    decks[mentioned_user_id].remove(mentioned_user_card)
+                    decks[user_id].append(mentioned_user_card)
+                    decks[mentioned_user_id].append(card)
+                    save_decks(decks)
+
+                    await message.channel.send(
+                        f"{message.author.display_name} traded {card['name']} to {mentioned_user.display_name} in exchange for {mentioned_user_card['name']}."
+                    )
+                    return
+                await message.channel.send(
+                    "Selected card not found in your deck.")
+              except asyncio.TimeoutError:
+                await message.channel.send(
+                    f"{mentioned_user.display_name}, you didn't select a card in time. Trade request cancelled."
+                )
             else:
               await message.channel.send(
                   f"{mentioned_user.display_name} declined the trade.")
@@ -770,7 +889,10 @@ async def on_message(message):
                 f"{mentioned_user.display_name} did not respond in time. Trade request cancelled."
             )
           return
-    await message.channel.send("No card found in your deck with that name.")
+      await message.channel.send("No card found in your deck with that name.")
+    else:
+      await message.channel.send(
+          "Both players need to have cards in their decks to trade.")
 
 
 @client.event
@@ -793,7 +915,7 @@ async def show_card(ctx, card_id):
 
 
 try:
-  token = os.getenv("DISCORD_TOKEN") or ""
+  token = os.getenv("BOT_TOKEN") or ""
   if token == "":
     raise Exception("Please add your token to the Secrets pane.")
   client.run(token)
@@ -801,7 +923,4 @@ except discord.HTTPException as e:
   if e.status == 429:
     print(
         "The Discord servers denied the connection for making too many requests"
-    )
-    print(
-        "Get help from https://stackoverflow.com/questions/66724687/in-discord-py-how-to-solve-the-error-for-toomanyrequests"
     )
