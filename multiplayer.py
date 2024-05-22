@@ -4,13 +4,15 @@ from discord.ui import Button, View
 import asyncio
 import json
 import requests
+from openpyxl import load_workbook
 
 
 class PokemonGame:
 
     def __init__(self, bot):
         self.bot = bot
-        self.pokemon_data = read_pokemon_data('pokemon_Data.txt')
+        self.pokemon_data = self.read_pokemon_data('pokemon-data.xlsx')
+
         self.sp_attack_used = [False, False]  # [player1, player2]
         self.sp_defense_used = [False, False]  # [player1, player2]
 
@@ -21,9 +23,11 @@ class PokemonGame:
             description=f"<@{challenger_id}> has challenged <@{opponent_id}> to a battle!",
             color=discord.Color.green()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
-        await ctx.send(f"<@{opponent_id}>, type `!ready` under 30 seconds to accept the challenge.")
+        await ctx.channel.send(
+            f"<@{opponent_id}>, type `!ready` under 30 seconds to accept the challenge."
+        )
 
         def check_ready(message):
             return message.author.id == opponent_id and message.content.lower() == '!ready'
@@ -36,7 +40,7 @@ class PokemonGame:
                 description=f"<@{opponent_id}> did not accept the challenge in time.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             return False
 
         embed = discord.Embed(
@@ -44,46 +48,24 @@ class PokemonGame:
             description=f"<@{opponent_id}> has accepted the challenge!",
             color=discord.Color.green()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
         return True
-
+    
     async def choose_pokemon(self, ctx, user_id):
-        user_inventory = self.bot.user_inventory.get(str(user_id), {})
-        pokemon_options = user_inventory.keys()
+        await ctx.channel.send(f"<@{user_id}>, type the name of the Pokémon you want to choose.")
 
-        embed = discord.Embed(
-            title="Choose Your Pokémon",
-            description="Select your Pokémon from the options below:",
-            color=discord.Color.blue()
-        )
+        def check(m):
+            return m.author.id == user_id
 
-        class PokemonSelectView(View):
-            def __init__(self):
-                super().__init__()
-                for pokemon_name in pokemon_options:
-                    button = Button(label=pokemon_name, style=discord.ButtonStyle.primary)
-                    button.callback = self.pokemon_callback
-                    self.add_item(button)
-                self.selected_pokemon = None
-
-            async def pokemon_callback(self, interaction: discord.Interaction):
-                self.selected_pokemon = interaction.component.label
-                self.stop()
-
-        view = PokemonSelectView()
-        msg = await ctx.send(embed=embed, view=view)
-
-        await view.wait()
-        if view.selected_pokemon:
-            return view.selected_pokemon
-        else:
-            embed = discord.Embed(
-                title="Choose Your Pokémon",
-                description=f"<@{user_id}> took too long to respond.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
+        try:
+            msg = await self.bot.wait_for('message', check=check, timeout=30)
+            return msg.content
+        except asyncio.TimeoutError:
+            await ctx.channel.send(f"<@{user_id}> took too long to respond.")
             return None
+
+
+
 
     async def attack(self, ctx, player):
         embed = discord.Embed(
@@ -91,7 +73,7 @@ class PokemonGame:
             description=f"<@{player}> chose to attack!",
             color=discord.Color.blue()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
         return 'attack'
 
     async def defense(self, ctx, player):
@@ -100,7 +82,7 @@ class PokemonGame:
             description=f"<@{player}> chose to defend!",
             color=discord.Color.green()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
         return 'defense'
 
     async def sp_attack(self, ctx, player):
@@ -111,7 +93,7 @@ class PokemonGame:
                 description=f"<@{player}> chose to use special attack!",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             self.sp_attack_used[player_index] = True
             return 'sp_attack'
         else:
@@ -120,7 +102,7 @@ class PokemonGame:
                 description="You have already used special attack once in this battle!",
                 color=discord.Color.orange()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             return None
 
     async def sp_defense(self, ctx, player):
@@ -131,7 +113,7 @@ class PokemonGame:
                 description=f"<@{player}> chose to use special defense!",
                 color=discord.Color.purple()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             self.sp_defense_used[player_index] = True
             return 'sp_defense'
         else:
@@ -140,7 +122,7 @@ class PokemonGame:
                 description="You have already used special defense once in this battle!",
                 color=discord.Color.orange()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             return None
 
     async def surrender(self, ctx, player_id):
@@ -149,16 +131,16 @@ class PokemonGame:
             description=f"<@{player_id}> has surrendered!",
             color=discord.Color.dark_red()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
         other_player_id = ctx.author.id if player_id != ctx.author.id else ctx.opponent.id
-        await update_user_data(player_id, 'loss')
-        await update_user_data(other_player_id, 'win')
+        await self.update_user_data(player_id, 'loss')
+        await self.update_user_data(other_player_id, 'win')
         embed = discord.Embed(
             title="Battle Result",
             description=f"<@{other_player_id}> wins by surrender!",
             color=discord.Color.gold()
         )
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
         return True
 
     async def run_battle(self, ctx, player1_id, player2_id):
@@ -174,7 +156,7 @@ class PokemonGame:
                 description="Could not choose Pokémon. Exiting battle.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             return
 
         player1_image_url = await self.load_pokemon_image(player1_pokemon)
@@ -187,12 +169,12 @@ class PokemonGame:
         )
         embed.add_field(name="Player 1", value=player1_pokemon)
         embed.add_field(name="Player 2", value=player2_pokemon)
-        await ctx.send(embed=embed)
+        await ctx.channel.send(embed=embed)
 
         if player1_image_url:
-            await ctx.send(player1_image_url)
+            await ctx.channel.send(player1_image_url)
         if player2_image_url:
-            await ctx.send(player2_image_url)
+            await ctx.channel.send(player2_image_url)
 
         player_turn = 1
 
@@ -236,20 +218,20 @@ class PokemonGame:
                 description=f"{current_player_pokemon} attacked! Remaining HP: Player 1 - {player1_hp}, Player 2 - {player2_hp}",
                 color=discord.Color.orange()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
 
             if player1_hp <= 0 or player2_hp <= 0:
                 winner_id = player1_id if player2_hp <= 0 else player2_id
                 loser_id = player2_id if winner_id == player1_id else player1_id
-                await update_user_data(winner_id, 'win')
-                await update_user_data(loser_id, 'loss')
+                await self.update_user_data(winner_id, 'win')
+                await self.update_user_data(loser_id, 'loss')
 
                 embed = discord.Embed(
                     title="Battle Result",
                     description=f"<@{winner_id}> wins the battle!",
                     color=discord.Color.gold()
                 )
-                await ctx.send(embed=embed)
+                await ctx.channel.send(embed=embed)
                 return
 
             player_turn = 2 if player_turn == 1 else 1
@@ -262,11 +244,17 @@ class PokemonGame:
         )
 
         class ActionSelectView(View):
+
             def __init__(self):
                 super().__init__()
-                actions = ["Attack", "Defense", "Special Attack", "Special Defense", "Surrender"]
+                actions = [
+                    "Attack", "Defense", "Special Attack", "Special Defense", "Surrender"
+                ]
                 for action in actions:
-                    button = Button(label=action, style=discord.ButtonStyle.primary if action != "Surrender" else discord.ButtonStyle.danger)
+                    button = Button(
+                        label=action,
+                        style=discord.ButtonStyle.primary if action != "Surrender" else discord.ButtonStyle.danger
+                    )
                     button.callback = self.action_callback
                     self.add_item(button)
                 self.selected_action = None
@@ -276,7 +264,7 @@ class PokemonGame:
                 self.stop()
 
         view = ActionSelectView()
-        msg = await ctx.send(embed=embed, view=view)
+        msg = await ctx.channel.send(embed=embed, view=view)
 
         await view.wait()
         if view.selected_action:
@@ -287,7 +275,7 @@ class PokemonGame:
                 description=f"<@{player_id}> took too long to respond.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
             return None
 
     async def load_pokemon_image(self, pokemon_name):
@@ -303,37 +291,26 @@ class PokemonGame:
         else:
             return None
 
+    async def update_user_data(self, user_id, result):
+        with open('user_data.json', 'r') as file:
+            user_data = json.load(file)
 
-async def update_user_data(user_id, result):
-    with open('user_data.json', 'r') as file:
-        user_data = json.load(file)
+        if result == 'win':
+            user_data[str(user_id)]['matches_won'] += 1
+            user_data[str(user_id)]['user_currency'] += 100
+        elif result == 'loss':
+            user_data[str(user_id)]['matches_lost'] += 1
+            user_data[str(user_id)]['user_currency'] -= 50
 
-    if result == 'win':
-        user_data[str(user_id)]['matches_won'] += 1
-        user_data[str(user_id)]['user_currency'] += 100
-    elif result == 'loss':
-        user_data[str(user_id)]['matches_lost'] += 1
-        user_data[str(user_id)]['user_currency'] -= 50
+        with open('user_data.json', 'w') as file:
+            json.dump(user_data, file, indent=4)
 
-    with open('user_data.json', 'w') as file:
-        json.dump(user_data, file, indent=4)
-
-
-def read_pokemon_data(file_path):
-    pokemon_data = {}
-    with open(file_path, 'r') as file:
-        for line in file:
-            fields = line.strip().split('\t')
-            number = fields[0]
-            name = fields[1]
-            type1 = fields[2]
-            type2 = fields[3]
-            hp = int(fields[4])
-            attack = int(fields[5])
-            defense = int(fields[6])
-            sp_attack = int(fields[7])
-            sp_defense = int(fields[8])
-            speed = int(fields[9])
+    def read_pokemon_data(self, file_path):
+        pokemon_data = {}
+        workbook = load_workbook(filename=file_path)
+        sheet = workbook.active
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            number, name, type1, type2, hp, attack, defense, sp_attack, sp_defense, speed = row
             pokemon_data[name] = {
                 'number': number,
                 'type1': type1,
@@ -345,22 +322,46 @@ def read_pokemon_data(file_path):
                 'sp_defense': sp_defense,
                 'speed': speed
             }
-    return pokemon_data
+        return pokemon_data
 
-# Example usage with discord.py bot initialization
-intents = discord.Intents.default()
-intents.message_content = True
 
-client = commands.Bot(command_prefix="$", intents=intents)
+'''
+    async def choose_pokemon(self, ctx, user_id):
+        user_inventory = self.bot.user_inventory.get(str(user_id), {})
+        pokemon_options = user_inventory.keys()
 
-@client.event
-async def on_ready():
-    print(f'Logged in as {client.user}!')
+        embed = discord.Embed(
+            title="Choose Your Pokémon",
+            description="Select your Pokémon from the options below:",
+            color=discord.Color.blue()
+        )
 
-@client.command()
-async def battle(ctx, opponent: discord.Member):
-    game = PokemonGame(client)
-    if await game.challenge(ctx, opponent.id):
-        await game.run_battle(ctx, ctx.author.id, opponent.id)
+        class PokemonSelectView(View):
 
-client.run('YOUR_BOT_TOKEN')
+            def __init__(self):
+                super().__init__()
+                for pokemon_name in pokemon_options:
+                    button = Button(label=pokemon_name, style=discord.ButtonStyle.primary)
+                    button.callback = self.pokemon_callback
+                    self.add_item(button)
+                self.selected_pokemon = None
+
+            async def pokemon_callback(self, interaction: discord.Interaction):
+                self.selected_pokemon = interaction.component.label
+                self.stop()
+
+        view = PokemonSelectView()
+        msg = await ctx.channel.send(embed=embed, view=view)
+
+        await view.wait()
+        if view.selected_pokemon:
+            return view.selected_pokemon
+        else:
+            embed = discord.Embed(
+                title="Choose Your Pokémon",
+                description=f"<@{user_id}> took too long to respond.",
+                color=discord.Color.red()
+            )
+            await ctx.channel.send(embed=embed)
+            return None
+'''
